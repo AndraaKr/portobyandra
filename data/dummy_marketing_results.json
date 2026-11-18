@@ -1,0 +1,122 @@
+{
+  "marketingResults": [
+    {
+      "slug": "kampanye-edukasi-energi-bersih",
+      "title": "Kampanye Edukasi Energi Bersih Solar Panel",
+      "accountName": "@rejaaton.energi",
+      "platform": "instagram",
+      "organization": "PT Reja Aton Energi",
+      "periodStart": "2026-08-15",
+      "periodEnd": "2026-10-15",
+      "metricLabel": "Views",
+      "baselineValue": 1200,
+      "resultValue": 4850,
+      "contentSummary": "Penyusunan 12 video pendek (Reels) edukasi sistem instalasi PLTS atap untuk segmen rumah tangga dengan hook visual animasi 3D dan penjelasan ringkas.",
+      "contentCount": 12,
+      "aiTools": [
+        "Midjourney",
+        "ElevenLabs",
+        "ChatGPT"
+      ],
+      "evidenceUrl": "https://instagram.com",
+      "sourceNote": "Meta Business Suite Insights, periode 15 Agustus — 15 Oktober 2026",
+      "relatedWorkSlugs": [
+        "reja-aton-brand-film",
+        "edukasi-3d"
+      ],
+      "published": true,
+      "sortOrder": 1
+    },
+    {
+      "slug": "peluncuran-konten-edukasi-tiktok",
+      "title": "Peluncuran Konten Edukasi Singkat TikTok",
+      "accountName": "@rejaaton.official",
+      "platform": "tiktok",
+      "organization": "PT Reja Aton Energi",
+      "periodStart": "2026-09-01",
+      "periodEnd": "2026-09-30",
+      "metricLabel": "Views",
+      "baselineValue": 0,
+      "resultValue": 3200,
+      "contentSummary": "Membangun distribusi konten dari nol dengan memanfaatkan micro-content 30-45 detik yang mengulas perbandingan tagihan listrik konvensional vs solar panel.",
+      "contentCount": 8,
+      "aiTools": [
+        "ChatGPT",
+        "CapCut"
+      ],
+      "evidenceUrl": "https://tiktok.com",
+      "sourceNote": "TikTok Analytics for Business, September 2026",
+      "relatedWorkSlugs": [],
+      "published": true,
+      "sortOrder": 2
+    },
+    {
+      "slug": "distribusi-infografis-b2b",
+      "title": "Distribusi Infografis Studi Kasus B2B",
+      "accountName": "PT Reja Aton Energi",
+      "platform": "linkedin",
+      "organization": "PT Reja Aton Energi",
+      "periodStart": "2026-08-01",
+      "periodEnd": "2026-10-31",
+      "metricLabel": "Impressions",
+      "baselineValue": 850,
+      "resultValue": 2400,
+      "contentSummary": "Perancangan carousel PDF dan studi kasus teknis penghematan biaya listrik untuk sektor industri dan komersial.",
+      "contentCount": 6,
+      "aiTools": [
+        "Claude",
+        "Figma"
+      ],
+      "evidenceUrl": "https://linkedin.com",
+      "sourceNote": "LinkedIn Page Analytics, Q3-Q4 2026",
+      "relatedWorkSlugs": [],
+      "published": true,
+      "sortOrder": 3
+    },
+    {
+      "slug": "optimalisasi-video-tutorial-panjang",
+      "title": "Optimalisasi Kanal Video Tutorial Format Panjang",
+      "accountName": "@andrakr.studio",
+      "platform": "youtube",
+      "organization": "Independen",
+      "periodStart": "2026-05-01",
+      "periodEnd": "2026-07-31",
+      "metricLabel": "Views",
+      "baselineValue": 1500,
+      "resultValue": 3900,
+      "contentSummary": "Penerapan strategi SEO YouTube, thumbnail kontras tinggi gaya editorial, dan retensi pacing pada 30 detik pertama.",
+      "contentCount": 4,
+      "aiTools": [
+        "Midjourney"
+      ],
+      "evidenceUrl": "https://youtube.com",
+      "sourceNote": "YouTube Studio Analytics, Mei — Juli 2026",
+      "relatedWorkSlugs": [],
+      "published": true,
+      "sortOrder": 4
+    },
+    {
+      "slug": "kampanye-awareness-energi-alternatif",
+      "title": "Kampanye Awareness Konversi Energi Alternatif",
+      "accountName": "@rejaaton.energi",
+      "platform": "instagram",
+      "organization": "PT Reja Aton Energi",
+      "periodStart": "2026-10-01",
+      "periodEnd": "2026-11-10",
+      "metricLabel": "Reach",
+      "baselineValue": 2200,
+      "resultValue": 5600,
+      "contentSummary": "Seri carousel grafis dan video motion infografis mengenai program insentif PLTS bagi pengusaha UMKM.",
+      "contentCount": 10,
+      "aiTools": [
+        "ChatGPT",
+        "Midjourney"
+      ],
+      "evidenceUrl": "https://instagram.com",
+      "sourceNote": "Instagram Professional Dashboard, Oktober — November 2026",
+      "relatedWorkSlugs": [],
+      "published": true,
+      "sortOrder": 5
+    }
+  ]
+}

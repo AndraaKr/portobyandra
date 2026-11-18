@@ -1,0 +1,1474 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  ShieldCheck, 
+  Briefcase, 
+  Layers, 
+  Mail, 
+  Database, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  LogOut, 
+  ExternalLink, 
+  Clock, 
+  Download, 
+  Upload, 
+  RefreshCw,
+  Search,
+  Check,
+  ToggleLeft,
+  ToggleRight,
+  FileText,
+  UserCog,
+  Camera,
+  Eye,
+  EyeOff,
+  TrendingUp
+} from 'lucide-react';
+import { usePortfolio } from '../context/PortfolioContext';
+import { Experience, PortfolioItem, ContactMessage, Certificate, MarketingResult } from '../types';
+import { ExperienceModal } from '../components/ExperienceModal';
+import { PortfolioModal } from '../components/PortfolioModal';
+import { PortfolioInlineEditor } from '../components/PortfolioInlineEditor';
+import { ExperienceInlineEditor } from '../components/ExperienceInlineEditor';
+import { MarketingModal } from '../components/marketing/MarketingModal';
+import { downloadAtsCvPdf } from '../utils/generateAtsPdf';
+import { AtsCvModal } from '../components/AtsCvModal';
+import { normalizeWork, PUBLIC_CATEGORIES } from '../utils/work';
+
+type AdminTab = 'portfolio' | 'marketing' | 'experience' | 'messages' | 'backup' | 'account' | 'profile';
+
+export const AdminDashboardPage: React.FC = () => {
+  const { 
+    currentUser, 
+    logoutAdmin, 
+    setActiveTab, 
+    portfolioItems, 
+    deletePortfolioItem, 
+    marketingResults,
+    addMarketingResult,
+    updateMarketingResult,
+    deleteMarketingResult,
+    experiences, 
+    deleteExperience, 
+    messages, 
+    markMessageRead, 
+    deleteMessage,
+    refetchAllData,
+    exportDataJson,
+    importDataJson,
+    showToast,
+    avatarUrl,
+    uploadAvatar,
+    updateAdminEmail,
+    updateAdminPassword,
+    siteProfile,
+    updateSiteProfile,
+    isRecoverySession 
+  } = usePortfolio();
+
+  const [currentAdminTab, setCurrentAdminTab] = useState<AdminTab>(isRecoverySession ? 'account' : 'portfolio');
+  const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('Semua');
+
+  // Pengaturan Akun
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const [newEmail, setNewEmail] = useState('');
+  const [emailUpdateStatus, setEmailUpdateStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordUpdateStatus, setPasswordUpdateStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  // Edit Mode state tracking
+  const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
+  const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
+  const [quickEditModeEnabled, setQuickEditModeEnabled] = useState<boolean>(true);
+
+  // Modals state
+  const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<PortfolioItem | null>(null);
+
+  const [experienceModalOpen, setExperienceModalOpen] = useState(false);
+  const [experienceToEdit, setExperienceToEdit] = useState<Experience | null>(null);
+
+  const [marketingModalOpen, setMarketingModalOpen] = useState(false);
+  const [marketingToEdit, setMarketingToEdit] = useState<MarketingResult | null>(null);
+
+  // Import JSON input
+  const [importText, setImportText] = useState('');
+  const [showImportBox, setShowImportBox] = useState(false);
+
+  // Profil Form
+  const [profileForm, setProfileForm] = useState({
+    name: '', shortName: '', title: '', tagline: '', bio: '',
+    email: '', phone: '', location: '', education: '', gpa: '', coursework: '', currentRole: '',
+    github: '', linkedin: '', instagram: '', youtube: '', website: '',
+    skillsUiux: '', skillsAiTools: '', skillsMultimedia: '', skillsMarketing: '',
+  });
+  const [certForm, setCertForm] = useState<Certificate[]>([]);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileStatus, setProfileStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  useEffect(() => {
+    if (!siteProfile) return;
+    const aiSkillsList = (siteProfile.skills.aiTools && siteProfile.skills.aiTools.length > 0)
+      ? siteProfile.skills.aiTools
+      : siteProfile.skills.frontend;
+
+    setProfileForm({
+      name: siteProfile.name,
+      shortName: siteProfile.shortName,
+      title: siteProfile.title,
+      tagline: siteProfile.tagline,
+      bio: siteProfile.bio,
+      email: siteProfile.email,
+      phone: siteProfile.phone,
+      location: siteProfile.location,
+      education: siteProfile.education,
+      gpa: siteProfile.gpa ?? '',
+      coursework: (siteProfile.coursework ?? []).join(', '),
+      currentRole: siteProfile.currentRole,
+      github: siteProfile.socials.github,
+      linkedin: siteProfile.socials.linkedin,
+      instagram: siteProfile.socials.instagram,
+      youtube: siteProfile.socials.youtube,
+      website: siteProfile.socials.website,
+      skillsUiux: siteProfile.skills.uiux.join(', '),
+      skillsAiTools: aiSkillsList.join(', '),
+      skillsMultimedia: siteProfile.skills.multimedia.join(', '),
+      skillsMarketing: siteProfile.skills.marketing.join(', '),
+    });
+    setCertForm(siteProfile.certificates);
+  }, [siteProfile]);
+
+  const setPF = (key: keyof typeof profileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setProfileForm(prev => ({ ...prev, [key]: e.target.value }));
+
+  const splitTags = (v: string) => v.split(',').map(t => t.trim()).filter(Boolean);
+
+  const addCertRow = () =>
+    setCertForm(prev => [...prev, { id: `cert-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', issuer: '', year: '', url: '', description: '' }]);
+  const updateCertRow = (id: string, field: keyof Certificate, value: string) =>
+    setCertForm(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
+  const removeCertRow = (id: string) => setCertForm(prev => prev.filter(c => c.id !== id));
+
+  const handleProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileStatus(null);
+    setIsSavingProfile(true);
+    const result = await updateSiteProfile({
+      name: profileForm.name.trim(),
+      shortName: profileForm.shortName.trim(),
+      title: profileForm.title.trim(),
+      tagline: profileForm.tagline.trim(),
+      bio: profileForm.bio.trim(),
+      email: profileForm.email.trim(),
+      phone: profileForm.phone.trim(),
+      location: profileForm.location.trim(),
+      education: profileForm.education.trim(),
+      gpa: profileForm.gpa.trim(),
+      coursework: splitTags(profileForm.coursework),
+      currentRole: profileForm.currentRole.trim(),
+      socials: {
+        github: profileForm.github.trim(),
+        linkedin: profileForm.linkedin.trim(),
+        instagram: profileForm.instagram.trim(),
+        youtube: profileForm.youtube.trim(),
+        website: profileForm.website.trim(),
+      },
+      skills: {
+        uiux: splitTags(profileForm.skillsUiux),
+        frontend: [],
+        aiTools: splitTags(profileForm.skillsAiTools),
+        multimedia: splitTags(profileForm.skillsMultimedia),
+        marketing: splitTags(profileForm.skillsMarketing),
+      },
+      certificates: certForm.filter(c => c.name.trim()),
+    });
+    setIsSavingProfile(false);
+    if (result.success) {
+      setProfileStatus({ type: 'success', msg: 'BERHASIL: Profil situs berhasil disimpan.' });
+    } else {
+      setProfileStatus({ type: 'error', msg: `GALAT: ${result.error || 'Gagal menyimpan profil.'}` });
+    }
+  };
+
+  const handleAvatarFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Ukuran berkas melebihi batas 5MB.', 'error');
+      return;
+    }
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setAvatarPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return;
+    setIsUploadingAvatar(true);
+    const result = await uploadAvatar(avatarFile);
+    setIsUploadingAvatar(false);
+    if (result.success) {
+      showToast('Foto profil berhasil diperbarui.');
+      setAvatarFile(null);
+      setAvatarPreview(null);
+    } else {
+      showToast(result.error || 'Gagal mengunggah foto profil.', 'error');
+    }
+  };
+
+  const handleEmailUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail.trim()) return;
+    setEmailUpdateStatus(null);
+    setIsUpdatingEmail(true);
+    const result = await updateAdminEmail(newEmail.trim());
+    setIsUpdatingEmail(false);
+    if (result.success) {
+      setEmailUpdateStatus({
+        type: 'success',
+        msg: 'BERHASIL: Tautan konfirmasi telah dikirim ke email baru dan lama. Silakan klik kedua tautan tersebut.',
+      });
+      setNewEmail('');
+    } else {
+      setEmailUpdateStatus({ type: 'error', msg: `GALAT: ${result.error || 'Gagal memperbarui email.'}` });
+    }
+  };
+
+  const handlePasswordUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordUpdateStatus(null);
+    if (newPassword.length < 8) {
+      setPasswordUpdateStatus({ type: 'error', msg: 'GALAT: Kata sandi minimal 8 karakter.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordUpdateStatus({ type: 'error', msg: 'GALAT: Konfirmasi kata sandi tidak cocok.' });
+      return;
+    }
+    setIsUpdatingPassword(true);
+    const result = await updateAdminPassword(newPassword);
+    setIsUpdatingPassword(false);
+    if (result.success) {
+      setPasswordUpdateStatus({ type: 'success', msg: 'BERHASIL: Kata sandi berhasil diperbarui.' });
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setPasswordUpdateStatus({ type: 'error', msg: `GALAT: ${result.error || 'Gagal memperbarui kata sandi.'}` });
+    }
+  };
+
+  // If not logged in, prompt
+  if (!currentUser) {
+    return (
+      <div className="pt-32 pb-16 max-w-md mx-auto px-4 text-center space-y-4">
+        <div className="w-12 h-12 border border-rule flex items-center justify-center mx-auto" style={{ backgroundColor: 'var(--paper-2)' }}>
+          <ShieldCheck className="w-6 h-6 text-ink" />
+        </div>
+        <h2 className="font-bold text-2xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+          Akses Terkunci
+        </h2>
+        <p className="label-mono text-xs text-ink-2">
+          Halaman Dashboard Admin hanya dapat diakses oleh pemilik situs.
+        </p>
+        <button
+          type="button"
+          onClick={() => setActiveTab('admin-login')}
+          className="btn-primary"
+        >
+          MENUJU HALAMAN LOGIN
+        </button>
+      </div>
+    );
+  }
+
+  const unreadMessagesCount = messages.filter((m) => !m.read).length;
+
+  const handleAddPortfolio = () => {
+    setItemToEdit(null);
+    setPortfolioModalOpen(true);
+  };
+
+  const handleEditPortfolioModal = (item: PortfolioItem) => {
+    setItemToEdit(item);
+    setPortfolioModalOpen(true);
+  };
+
+  const toggleInlineEditPortfolio = (id: string) => {
+    setEditingPortfolioId((prev) => (prev === id ? null : id));
+  };
+
+  const handleDeletePortfolio = (id: string, title: string) => {
+    if (confirm(`Hapus karya "${title}" dari portofolio? Tindakan ini tidak dapat dibatalkan.`)) {
+      if (editingPortfolioId === id) setEditingPortfolioId(null);
+      deletePortfolioItem(id);
+    }
+  };
+
+  const handleAddExperience = () => {
+    setExperienceToEdit(null);
+    setExperienceModalOpen(true);
+  };
+
+  const handleEditExperienceModal = (exp: Experience) => {
+    setExperienceToEdit(exp);
+    setExperienceModalOpen(true);
+  };
+
+  const toggleInlineEditExperience = (id: string) => {
+    setEditingExperienceId((prev) => (prev === id ? null : id));
+  };
+
+  const handleDeleteExperience = (id: string, role: string) => {
+    if (confirm(`Hapus pengalaman "${role}"? Tindakan ini tidak dapat dibatalkan.`)) {
+      if (editingExperienceId === id) setEditingExperienceId(null);
+      deleteExperience(id);
+    }
+  };
+
+  const handleAddMarketing = () => {
+    setMarketingToEdit(null);
+    setMarketingModalOpen(true);
+  };
+
+  const handleEditMarketing = (item: MarketingResult) => {
+    setMarketingToEdit(item);
+    setMarketingModalOpen(true);
+  };
+
+  const handleDeleteMarketing = async (id: string, title: string) => {
+    if (confirm(`Hapus hasil marketing "${title}"? Tindakan ini tidak dapat dibatalkan.`)) {
+      await deleteMarketingResult(id);
+    }
+  };
+
+  const handleTogglePublishMarketing = async (item: MarketingResult) => {
+    if (!item.published && !item.sourceNote?.trim()) {
+      alert('Sumber data (source_note) wajib diisi sebelum menerbitkan hasil.');
+      return;
+    }
+    await updateMarketingResult(item.id, { published: !item.published });
+  };
+
+  const handleImportSubmit = async () => {
+    if (!importText.trim()) return;
+    const ok = await importDataJson(importText);
+    if (ok) {
+      setImportText('');
+      setShowImportBox(false);
+    }
+  };
+
+  // Filter Portofolio
+  const filteredPortfolio = portfolioItems.filter((item) => {
+    const matchesCategory =
+      selectedCategoryFilter === 'Semua' || item.category === selectedCategoryFilter;
+    const matchesSearch =
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.tools.some((t) => t.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  // Filter Pengalaman
+  const filteredExperiences = experiences.filter((exp) => {
+    const s = searchTerm.toLowerCase();
+    return (
+      exp.role.toLowerCase().includes(s) ||
+      exp.organization.toLowerCase().includes(s) ||
+      (exp.skills && exp.skills.some((k) => k.toLowerCase().includes(s)))
+    );
+  });
+
+  return (
+    <div className="page py-12 md:py-20 space-y-10">
+      {/* Top Bar Banner */}
+      <div className="border border-rule p-6 flex flex-col md:flex-row md:items-center justify-between gap-4" style={{ backgroundColor: 'var(--paper-2)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 border border-rule flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--paper)' }}>
+            <ShieldCheck className="w-5 h-5 text-ink" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+                Panel Kontrol CMS Portofolio
+              </h1>
+              <span className="label-mono text-xs px-2 py-0.5 border border-rule">
+                MODE ADMIN
+              </span>
+            </div>
+            <p className="label-mono text-xs text-ink-2">
+              Masuk sebagai <strong>{currentUser.name}</strong> ({currentUser.email})
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab('beranda')}
+            className="btn-primary"
+            style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+          >
+            <span>Lihat Publik</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={logoutAdmin}
+            className="btn-primary"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Keluar</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Metric Counters */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-5 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+          <div className="flex items-center justify-between label-mono text-xs text-ink-2 mb-2">
+            <span>TOTAL KARYA</span>
+            <Layers className="w-4 h-4 text-ink" />
+          </div>
+          <div className="font-bold text-2xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+            {portfolioItems.length}
+          </div>
+          <span className="label-mono text-xs text-ink-2">Termasuk non-publik</span>
+        </div>
+
+        <div className="p-5 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+          <div className="flex items-center justify-between label-mono text-xs text-ink-2 mb-2">
+            <span>RIWAYAT KARIER</span>
+            <Briefcase className="w-4 h-4 text-ink" />
+          </div>
+          <div className="font-bold text-2xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+            {experiences.length}
+          </div>
+          <span className="label-mono text-xs text-ink-2">Pengalaman kerja</span>
+        </div>
+
+        <div className="p-5 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+          <div className="flex items-center justify-between label-mono text-xs text-ink-2 mb-2">
+            <span>PESAN MASUK</span>
+            <Mail className="w-4 h-4 text-ink" />
+          </div>
+          <div className="font-bold text-2xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+            {messages.length}
+          </div>
+          <span className="label-mono text-xs text-ink-2 font-medium">
+            {unreadMessagesCount} belum dibaca
+          </span>
+        </div>
+
+        <div className="p-5 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+          <div className="flex items-center justify-between label-mono text-xs text-ink-2 mb-2">
+            <span>DATABASE</span>
+            <Database className="w-4 h-4 text-ink" />
+          </div>
+          <div className="font-bold text-2xl text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+            Supabase
+          </div>
+          <span className="label-mono text-xs text-ink-2">Sinkronisasi Cloud</span>
+        </div>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-rule pb-3 label-mono">
+        {[
+          { id: 'portfolio', label: `Kelola Portofolio (${portfolioItems.length})`, icon: Layers },
+          { id: 'marketing', label: `Kelola Marketing (${marketingResults.length})`, icon: TrendingUp },
+          { id: 'experience', label: `Kelola Pengalaman (${experiences.length})`, icon: Briefcase },
+          { id: 'messages', label: `Pesan Masuk (${messages.length})`, icon: Mail },
+          { id: 'backup', label: 'Cadangan & Ekspor', icon: Database },
+          { id: 'profile', label: 'Profil Situs', icon: UserCog },
+          { id: 'account', label: 'Akun Login', icon: ShieldCheck },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = currentAdminTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setCurrentAdminTab(tab.id as AdminTab);
+                setSearchTerm('');
+              }}
+              className="px-3.5 py-1.5 cursor-pointer flex items-center gap-1.5"
+              style={{
+                backgroundColor: isActive ? 'var(--ink)' : 'transparent',
+                color: isActive ? 'var(--paper)' : 'var(--ink)',
+                border: '1px solid var(--rule)',
+                borderRadius: 0,
+              }}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ========================================================
+          TAB 1: PORTOFOLIO
+          ======================================================== */}
+      {currentAdminTab === 'portfolio' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+            <div>
+              <h2 className="font-bold text-base text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+                Daftar Karya &amp; Produksi Media
+              </h2>
+              <p className="label-mono text-xs text-ink-2">
+                Karya dengan kategori non-publik (UI/UX Desain &amp; Web Development) disembunyikan dari halaman depan.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setQuickEditModeEnabled(!quickEditModeEnabled)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 label-mono border border-rule cursor-pointer"
+                style={{ backgroundColor: 'var(--paper)', color: 'var(--ink)' }}
+              >
+                {quickEditModeEnabled ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                <span>Edit Cepat: {quickEditModeEnabled ? 'Aktif' : 'Standar'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleAddPortfolio}
+                className="btn-primary"
+              >
+                <Plus className="w-3.5 h-3.5 text-paper" />
+                <span>Tambah Karya</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Filters & Search */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-1 label-mono">
+              {['Semua', 'Desain', 'Video Editing', 'UI/UX Desain', 'Web Development'].map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategoryFilter(cat)}
+                  className="px-3 py-1 cursor-pointer border border-rule"
+                  style={{
+                    backgroundColor: selectedCategoryFilter === cat ? 'var(--ink)' : 'transparent',
+                    color: selectedCategoryFilter === cat ? 'var(--paper)' : 'var(--ink)',
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative w-full md:w-72">
+              <Search className="w-3.5 h-3.5 text-ink-2 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Cari judul atau tools…"
+                className="input-swiss pl-8 text-xs"
+              />
+            </div>
+          </div>
+
+          {/* Portfolio List */}
+          <div className="border border-rule divide-y divide-rule" style={{ backgroundColor: 'var(--paper)' }}>
+            {filteredPortfolio.map((item) => {
+              const isCurrentlyEditing = editingPortfolioId === item.id;
+              const norm = normalizeWork(item);
+              const isNonPublic = !PUBLIC_CATEGORIES.includes(item.category as any);
+
+              return (
+                <div
+                  key={item.id}
+                  className="p-4 sm:p-5 transition-colors duration-150"
+                  style={{
+                    backgroundColor: isCurrentlyEditing ? 'var(--paper-2)' : 'transparent',
+                    borderLeft: isCurrentlyEditing ? '4px solid var(--ink)' : 'none',
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      {/* Media Thumb */}
+                      <div className="w-16 h-12 border border-rule shrink-0 overflow-hidden flex items-center justify-center" style={{ backgroundColor: 'var(--paper-2)' }}>
+                        {item.posterUrl || item.imageUrl ? (
+                          <img
+                            src={item.posterUrl || item.imageUrl}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="label-mono text-xs text-ink-2">NO POSTER</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3
+                            className="font-bold text-sm text-ink"
+                            style={{ fontFamily: 'var(--font-display)' }}
+                          >
+                            {item.title}
+                          </h3>
+
+                          {item.isShowreel && (
+                            <span className="label-mono text-xs px-1.5 py-0.5 border border-rule font-bold">
+                              SHOWREEL
+                            </span>
+                          )}
+
+                          {item.featured && (
+                            <span className="label-mono text-xs px-1.5 py-0.5 border border-rule">
+                              UNGGULAN
+                            </span>
+                          )}
+
+                          {isNonPublic && (
+                            <span className="label-mono text-xs px-1.5 py-0.5 border border-rule font-semibold">
+                              NON-PUBLIK
+                            </span>
+                          )}
+
+                          {norm.incomplete.length > 0 && (
+                            <span className="label-mono text-xs px-1.5 py-0.5 border border-rule">
+                              BELUM LENGKAP: {norm.incomplete.join(', ')}
+                            </span>
+                          )}
+
+                          {isCurrentlyEditing && (
+                            <span className="label-mono text-xs px-1.5 py-0.5 bg-ink text-paper">
+                              SEDANG DIEDIT
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="label-mono text-xs text-ink-2 flex flex-wrap items-center gap-2">
+                          <span>{item.category}</span>
+                          <span>·</span>
+                          <span>{item.mediaType}</span>
+                          {item.client && (
+                            <>
+                              <span>·</span>
+                              <span>Klien: {item.client}</span>
+                            </>
+                          )}
+                          {item.workYear && (
+                            <>
+                              <span>·</span>
+                              <span>Tahun: {item.workYear}</span>
+                            </>
+                          )}
+                          {item.tools?.length > 0 && (
+                            <>
+                              <span>·</span>
+                              <span>{item.tools.slice(0, 3).join(', ')}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          quickEditModeEnabled
+                            ? toggleInlineEditPortfolio(item.id)
+                            : handleEditPortfolioModal(item)
+                        }
+                        className="btn-primary text-xs py-1 px-3"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isCurrentlyEditing ? 'Tutup' : 'Edit'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePortfolio(item.id, item.title)}
+                        className="btn-primary text-xs py-1 px-3"
+                        style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                        title="Hapus karya"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline Editor */}
+                  {isCurrentlyEditing && (
+                    <PortfolioInlineEditor
+                      item={item}
+                      onClose={() => setEditingPortfolioId(null)}
+                      onOpenModal={() => handleEditPortfolioModal(item)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredPortfolio.length === 0 && (
+            <div className="p-8 text-center border border-rule label-mono text-xs text-ink-2">
+              Tidak ada karya yang sesuai dengan kriteria pencarian.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB: MARKETING (Digital Marketing & AI Content)
+          ======================================================== */}
+      {currentAdminTab === 'marketing' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+            <div>
+              <h2 className="font-bold text-base text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+                Daftar Capaian Digital Marketing &amp; Konten AI
+              </h2>
+              <p className="label-mono text-xs text-ink-2">
+                Hanya hasil berstatus Terbit dan memiliki Sumber Data (source_note) yang tampil di publik.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddMarketing}
+              className="btn-primary"
+            >
+              <Plus className="w-3.5 h-3.5 text-paper" />
+              <span>Tambah Hasil Marketing</span>
+            </button>
+          </div>
+
+          {marketingResults.length === 0 ? (
+            <div className="p-8 text-center border border-rule label-mono text-xs text-ink-2">
+              Belum ada hasil marketing tersimpan.
+            </div>
+          ) : (
+            <div className="border border-rule divide-y divide-rule" style={{ backgroundColor: 'var(--paper)' }}>
+              {marketingResults.map((mkt) => {
+                let deltaText = 'Dari 0';
+                if (mkt.baselineValue > 0) {
+                  const pct = Math.round(((mkt.resultValue - mkt.baselineValue) / mkt.baselineValue) * 100);
+                  deltaText = pct > 0 ? `+${pct}%` : `${pct}%`;
+                }
+                return (
+                  <div key={mkt.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="label-mono text-xs px-2 py-0.5 border border-rule uppercase">
+                          {mkt.platform}
+                        </span>
+                        <h3 className="font-bold text-ink">{mkt.title}</h3>
+                        <span className={`label-mono text-xs px-2 py-0.5 ${mkt.published ? 'bg-ink text-paper' : 'border border-rule text-ink-2'}`}>
+                          {mkt.published ? 'TERBIT' : 'DRAF'}
+                        </span>
+                      </div>
+                      <p className="label-mono text-xs text-ink-2">
+                        {mkt.accountName} · Sebelum: {mkt.baselineValue} · Sesudah: {mkt.resultValue} ({deltaText}) · Sumber: {mkt.sourceNote}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePublishMarketing(mkt)}
+                        className="btn-primary text-xs py-1 px-2.5"
+                        style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                      >
+                        {mkt.published ? 'Jadikan Draf' : 'Terbitkan'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEditMarketing(mkt)}
+                        className="btn-primary text-xs py-1 px-2.5"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMarketing(mkt.id, mkt.title)}
+                        className="btn-primary text-xs py-1 px-2.5"
+                        style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB 2: PENGALAMAN
+          ======================================================== */}
+      {currentAdminTab === 'experience' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+            <div>
+              <h2 className="font-bold text-base text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+                Daftar Pengalaman Kerja &amp; Karier
+              </h2>
+              <p className="label-mono text-xs text-ink-2">
+                Atur riwayat karier, peran, organisasi, periode, dan nomor urut prioritas.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddExperience}
+              className="btn-primary"
+            >
+              <Plus className="w-3.5 h-3.5 text-paper" />
+              <span>Tambah Pengalaman</span>
+            </button>
+          </div>
+
+          {/* Search bar */}
+          <div className="relative max-w-sm">
+            <Search className="w-3.5 h-3.5 text-ink-2 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari posisi, organisasi, atau skill…"
+              className="input-swiss pl-8 text-xs"
+            />
+          </div>
+
+          {/* Experience List */}
+          <div className="border border-rule divide-y divide-rule" style={{ backgroundColor: 'var(--paper)' }}>
+            {filteredExperiences.map((exp) => {
+              const isCurrentlyEditing = editingExperienceId === exp.id;
+
+              return (
+                <div
+                  key={exp.id}
+                  className="p-4 sm:p-5 transition-colors duration-150"
+                  style={{
+                    backgroundColor: isCurrentlyEditing ? 'var(--paper-2)' : 'transparent',
+                    borderLeft: isCurrentlyEditing ? '4px solid var(--ink)' : 'none',
+                  }}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="label-mono text-xs font-bold px-2 py-0.5 border border-rule">
+                          #{exp.order || 1}
+                        </span>
+                        <h3 className="font-bold text-sm text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+                          {exp.role}
+                        </h3>
+                        {isCurrentlyEditing && (
+                          <span className="label-mono text-xs px-1.5 py-0.5 bg-ink text-paper">
+                            SEDANG DIEDIT
+                          </span>
+                        )}
+                      </div>
+                      <p className="label-mono text-xs text-ink-2">
+                        <strong>{exp.organization}</strong> · {exp.period} {exp.location && `· ${exp.location}`}
+                      </p>
+                      <p className="text-xs text-ink-2 line-clamp-2">
+                        {exp.description}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <button
+                        type="button"
+                        onClick={() => toggleInlineEditExperience(exp.id)}
+                        className="btn-primary text-xs py-1 px-3"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>{isCurrentlyEditing ? 'Tutup' : 'Edit'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExperience(exp.id, exp.role)}
+                        className="btn-primary text-xs py-1 px-3"
+                        style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {isCurrentlyEditing && (
+                    <ExperienceInlineEditor
+                      exp={exp}
+                      onClose={() => setEditingExperienceId(null)}
+                      onOpenModal={() => handleEditExperienceModal(exp)}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredExperiences.length === 0 && (
+            <div className="p-8 text-center border border-rule label-mono text-xs text-ink-2">
+              Tidak ada riwayat pengalaman yang cocok dengan pencarian.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB 3: PESAN MASUK
+          ======================================================== */}
+      {currentAdminTab === 'messages' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-rule pb-3">
+            <h2 className="font-bold text-lg text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+              Pesan Masuk dari Formulir Kontak
+            </h2>
+            <span className="label-mono text-xs text-ink-2">
+              {unreadMessagesCount} pesan belum dibaca
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className="p-5 border border-rule space-y-3"
+                style={{
+                  backgroundColor: msg.read ? 'var(--paper)' : 'var(--paper-2)',
+                  borderLeft: msg.read ? '1px solid var(--rule)' : '4px solid var(--ink)',
+                }}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm text-ink">
+                      {msg.name}
+                    </h3>
+                    <span className="label-mono text-xs px-2 py-0.5 border border-rule">
+                      {msg.projectType}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 label-mono text-xs text-ink-2">
+                    <Clock className="w-3.5 h-3.5 text-ink-2" />
+                    <span>{new Date(msg.createdAt).toLocaleString('id-ID')}</span>
+                  </div>
+                </div>
+
+                <p className="label-mono text-xs text-ink-2">
+                  Email: <a href={`mailto:${msg.email}`} className="text-link text-ink">{msg.email}</a> · Subjek: <strong>{msg.subject}</strong>
+                </p>
+
+                <p className="text-xs text-ink leading-relaxed p-3 border border-rule whitespace-pre-line" style={{ backgroundColor: 'var(--paper)' }}>
+                  {msg.message}
+                </p>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  {!msg.read && (
+                    <button
+                      type="button"
+                      onClick={() => markMessageRead(msg.id)}
+                      className="btn-primary text-xs py-1 px-3"
+                      style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Tandai Dibaca</span>
+                    </button>
+                  )}
+                  <a
+                    href={`mailto:${msg.email}?subject=Balasan: ${encodeURIComponent(msg.subject)}`}
+                    className="btn-primary text-xs py-1 px-3"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Balas Email</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => deleteMessage(msg.id)}
+                    className="btn-primary text-xs py-1 px-3"
+                    style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                    title="Hapus pesan"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {messages.length === 0 && (
+              <div className="p-8 text-center border border-rule label-mono text-xs text-ink-2">
+                Belum ada pesan masuk dari pengunjung.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB 4: BACKUP & EKSPOR
+          ======================================================== */}
+      {currentAdminTab === 'backup' && (
+        <div className="space-y-6">
+          <h2 className="font-bold text-lg text-ink" style={{ fontFamily: 'var(--font-display)' }}>
+            Pengelolaan Data &amp; Cadangan
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper-2)' }}>
+              <FileText className="w-6 h-6 text-ink" />
+              <h3 className="font-bold text-sm text-ink">CV ATS (PDF)</h3>
+              <p className="label-mono text-xs text-ink-2">
+                Hasilkan CV ATS standar Indonesia berbasis data riwayat aktif.
+              </p>
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!siteProfile) {
+                      showToast('Data profil belum termuat, coba lagi sesaat.', 'error');
+                      return;
+                    }
+                    try {
+                      downloadAtsCvPdf(siteProfile, experiences, portfolioItems, { language: 'id', includeProjects: true });
+                      showToast('CV ATS (PDF) berhasil diunduh!');
+                    } catch {
+                      showToast('Gagal mengunduh PDF', 'error');
+                    }
+                  }}
+                  className="btn-primary w-full text-xs"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Unduh PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAtsModalOpen(true)}
+                  className="btn-primary w-full text-xs"
+                  style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                >
+                  Pratinjau CV
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper-2)' }}>
+              <Download className="w-6 h-6 text-ink" />
+              <h3 className="font-bold text-sm text-ink">Ekspor Cadangan</h3>
+              <p className="label-mono text-xs text-ink-2">
+                Unduh seluruh data pengalaman kerja dan portofolio dalam file JSON.
+              </p>
+              <button
+                type="button"
+                onClick={exportDataJson}
+                className="btn-primary w-full text-xs"
+              >
+                Unduh JSON
+              </button>
+            </div>
+
+            <div className="p-5 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper-2)' }}>
+              <Upload className="w-6 h-6 text-ink" />
+              <h3 className="font-bold text-sm text-ink">Impor Cadangan</h3>
+              <p className="label-mono text-xs text-ink-2">
+                Pulihkan atau perbarui data portofolio dari file JSON.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowImportBox(!showImportBox)}
+                className="btn-primary w-full text-xs"
+                style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+              >
+                {showImportBox ? 'Tutup Form' : 'Buka Form'}
+              </button>
+            </div>
+
+            <div className="p-5 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper-2)' }}>
+              <RefreshCw className="w-6 h-6 text-ink" />
+              <h3 className="font-bold text-sm text-ink">Muat Ulang Server</h3>
+              <p className="label-mono text-xs text-ink-2">
+                Ambil ulang data terbaru langsung dari database Supabase.
+              </p>
+              <button
+                type="button"
+                onClick={() => refetchAllData()}
+                className="btn-primary w-full text-xs"
+              >
+                Muat Ulang
+              </button>
+            </div>
+          </div>
+
+          {showImportBox && (
+            <div className="p-6 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper)' }}>
+              <h3 className="font-bold text-sm text-ink">
+                Tempelkan Teks JSON Cadangan:
+              </h3>
+              <textarea
+                rows={6}
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder='{"experiences": [...], "portfolioItems": [...]}'
+                className="input-swiss font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={handleImportSubmit}
+                className="btn-primary"
+              >
+                Proses Impor Data
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================
+          TAB 5: PROFIL SITUS
+          ======================================================== */}
+      {currentAdminTab === 'profile' && (
+        <form onSubmit={handleProfileSave} className="space-y-6 max-w-3xl">
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <h3 className="font-bold text-sm text-ink border-b border-rule pb-2">
+              Identitas Pemilik
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block label-mono text-ink mb-1">Nama Lengkap</label>
+                <input value={profileForm.name} onChange={setPF('name')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">Nama Singkat (Hero)</label>
+                <input value={profileForm.shortName} onChange={setPF('shortName')} className="input-swiss" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Jabatan / Headline</label>
+                <input value={profileForm.title} onChange={setPF('title')} className="input-swiss" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Tagline Pengantar Hero (Maks ~38 kata)</label>
+                <input value={profileForm.tagline} onChange={setPF('tagline')} className="input-swiss" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Bio Lengkap (Halaman Tentang &amp; CV)</label>
+                <textarea value={profileForm.bio} onChange={setPF('bio')} rows={5} className="input-swiss resize-y" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Pendidikan</label>
+                <input value={profileForm.education} onChange={setPF('education')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">IPK / GPA (tampil di Tentang Saya)</label>
+                <input value={profileForm.gpa} onChange={setPF('gpa')} placeholder="3.78" className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">Mata Kuliah Relevan (pisahkan dengan koma)</label>
+                <input value={profileForm.coursework} onChange={setPF('coursework')} placeholder="Riset Audiens, Strategi Kampanye Digital" className="input-swiss" />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <h3 className="font-bold text-sm text-ink border-b border-rule pb-2">
+              Kontak &amp; Tautan Sosial
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block label-mono text-ink mb-1">Email Publik</label>
+                <input type="email" value={profileForm.email} onChange={setPF('email')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">No. WhatsApp</label>
+                <input value={profileForm.phone} onChange={setPF('phone')} className="input-swiss" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Lokasi Domisili</label>
+                <input value={profileForm.location} onChange={setPF('location')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">LinkedIn (URL)</label>
+                <input value={profileForm.linkedin} onChange={setPF('linkedin')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">GitHub (URL)</label>
+                <input value={profileForm.github} onChange={setPF('github')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">Instagram (URL)</label>
+                <input value={profileForm.instagram} onChange={setPF('instagram')} className="input-swiss" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">YouTube (URL)</label>
+                <input value={profileForm.youtube} onChange={setPF('youtube')} className="input-swiss" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Website URL</label>
+                <input value={profileForm.website} onChange={setPF('website')} className="input-swiss" />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <h3 className="font-bold text-sm text-ink border-b border-rule pb-2">
+              Keahlian (Pisahkan Koma)
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block label-mono text-ink mb-1">Video Editing &amp; Multimedia</label>
+                <textarea value={profileForm.skillsMultimedia} onChange={setPF('skillsMultimedia')} rows={2} className="input-swiss resize-y" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">Digital Marketing &amp; Konten AI</label>
+                <textarea value={profileForm.skillsMarketing} onChange={setPF('skillsMarketing')} rows={2} className="input-swiss resize-y" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">UI/UX &amp; Product Design</label>
+                <textarea value={profileForm.skillsUiux} onChange={setPF('skillsUiux')} rows={2} className="input-swiss resize-y" />
+              </div>
+              <div>
+                <label className="block label-mono text-ink mb-1">Tool AI &amp; Generatif</label>
+                <textarea
+                  value={profileForm.skillsAiTools}
+                  onChange={setPF('skillsAiTools')}
+                  rows={2}
+                  className="input-swiss resize-y"
+                  placeholder="ChatGPT, Midjourney, ElevenLabs, Runway Gen-2"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <div className="flex items-center justify-between border-b border-rule pb-2">
+              <h3 className="font-bold text-sm text-ink">Sertifikat</h3>
+              <button
+                type="button"
+                onClick={addCertRow}
+                className="btn-primary text-xs py-1 px-3"
+              >
+                <Plus className="w-3.5 h-3.5" /> Tambah
+              </button>
+            </div>
+            {certForm.map((cert) => (
+              <div key={cert.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+                <input value={cert.name} onChange={(e) => updateCertRow(cert.id, 'name', e.target.value)} placeholder="Nama sertifikat" className="input-swiss sm:col-span-5" />
+                <input value={cert.issuer} onChange={(e) => updateCertRow(cert.id, 'issuer', e.target.value)} placeholder="Penerbit" className="input-swiss sm:col-span-3" />
+                <input value={cert.year} onChange={(e) => updateCertRow(cert.id, 'year', e.target.value)} placeholder="Tahun" className="input-swiss sm:col-span-2" />
+                <button
+                  type="button"
+                  onClick={() => removeCertRow(cert.id)}
+                  className="sm:col-span-2 btn-primary text-xs py-1 px-2"
+                  style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Hapus
+                </button>
+                <input value={cert.description || ''} onChange={(e) => updateCertRow(cert.id, 'description', e.target.value)} placeholder="Deskripsi kompetensi (tampil di kartu sertifikat)" className="input-swiss sm:col-span-12" />
+                <input value={cert.url || ''} onChange={(e) => updateCertRow(cert.id, 'url', e.target.value)} placeholder="Link sertifikat (URL)" className="input-swiss sm:col-span-12" />
+              </div>
+            ))}
+          </div>
+
+          {profileStatus && (
+            <div className="border-l-2 border-ink pl-3 py-1 label-mono text-xs text-ink">
+              {profileStatus.msg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSavingProfile}
+            className="btn-primary"
+          >
+            {isSavingProfile ? 'MENYIMPAN…' : 'SIMPAN PROFIL'}
+          </button>
+        </form>
+      )}
+
+      {/* ========================================================
+          TAB 6: AKUN LOGIN
+          ======================================================== */}
+      {currentAdminTab === 'account' && (
+        <div className="space-y-6 max-w-xl">
+          {/* Foto Profil */}
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <h3 className="font-bold text-sm text-ink flex items-center gap-2">
+              <Camera className="w-4 h-4 text-ink" />
+              Foto Profil Pemilik
+            </h3>
+            <p className="label-mono text-xs text-ink-2">
+              Format JPG/PNG, rasio 4:5 di halaman Tentang.
+            </p>
+
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-24 border border-rule flex items-center justify-center shrink-0 overflow-hidden" style={{ backgroundColor: 'var(--paper-2)' }}>
+                {avatarPreview || avatarUrl ? (
+                  <img src={avatarPreview || avatarUrl || ''} alt="Foto profil" className="w-full h-full object-cover" />
+                ) : (
+                  <UserCog className="w-8 h-8 text-ink-2" />
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFileSelect}
+                  className="hidden"
+                  id="avatar-upload-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('avatar-upload-input')?.click()}
+                  className="btn-primary text-xs py-1.5 px-3"
+                  style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                >
+                  PILIH FOTO BARU
+                </button>
+
+                {avatarFile && (
+                  <button
+                    type="button"
+                    onClick={handleAvatarUpload}
+                    disabled={isUploadingAvatar}
+                    className="btn-primary text-xs py-1.5 px-3 block"
+                  >
+                    {isUploadingAvatar ? 'MENGUNGGAH…' : 'SIMPAN FOTO INI'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Ganti Email */}
+          <form onSubmit={handleEmailUpdateSubmit} className="p-6 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper)' }}>
+            <h3 className="font-bold text-sm text-ink flex items-center gap-2">
+              <Mail className="w-4 h-4 text-ink" />
+              Ganti Email Login
+            </h3>
+            <p className="label-mono text-xs text-ink-2">
+              Email saat ini: <strong>{currentUser?.email}</strong>
+            </p>
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="Email baru…"
+              required
+              className="input-swiss"
+            />
+            {emailUpdateStatus && (
+              <div className="border-l-2 border-ink pl-3 py-1 label-mono text-xs text-ink">
+                {emailUpdateStatus.msg}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={isUpdatingEmail}
+              className="btn-primary"
+            >
+              {isUpdatingEmail ? 'MEMPROSES…' : 'PERBARUI EMAIL'}
+            </button>
+          </form>
+
+          {/* Ganti Password */}
+          <form onSubmit={handlePasswordUpdateSubmit} className="p-6 border border-rule space-y-3" style={{ backgroundColor: 'var(--paper)' }}>
+            <h3 className="font-bold text-sm text-ink flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-ink" />
+              Ganti Kata Sandi
+            </h3>
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Kata sandi baru (min. 8 karakter)…"
+                required
+                minLength={8}
+                className="input-swiss pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((p) => !p)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink cursor-pointer bg-transparent border-none"
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <input
+              type={showNewPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Ulangi kata sandi baru…"
+              required
+              minLength={8}
+              className="input-swiss"
+            />
+            {passwordUpdateStatus && (
+              <div className="border-l-2 border-ink pl-3 py-1 label-mono text-xs text-ink">
+                {passwordUpdateStatus.msg}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={isUpdatingPassword}
+              className="btn-primary"
+            >
+              {isUpdatingPassword ? 'MEMPROSES…' : 'PERBARUI KATA SANDI'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Modals */}
+      <PortfolioModal
+        isOpen={portfolioModalOpen}
+        onClose={() => setPortfolioModalOpen(false)}
+        itemToEdit={itemToEdit}
+      />
+
+      <ExperienceModal
+        isOpen={experienceModalOpen}
+        onClose={() => setExperienceModalOpen(false)}
+        experienceToEdit={experienceToEdit}
+      />
+
+      <MarketingModal
+        isOpen={marketingModalOpen}
+        onClose={() => setMarketingModalOpen(false)}
+        itemToEdit={marketingToEdit}
+        portfolioItems={portfolioItems}
+        onSave={async (data) => {
+          if (marketingToEdit) {
+            return await updateMarketingResult(marketingToEdit.id, data);
+          } else {
+            return await addMarketingResult(data);
+          }
+        }}
+      />
+
+      <AtsCvModal
+        isOpen={isAtsModalOpen}
+        onClose={() => setIsAtsModalOpen(false)}
+      />
+    </div>
+  );
+};

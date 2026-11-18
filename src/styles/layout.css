@@ -1,0 +1,26 @@
+.page {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-margin);
+  width: 100%;
+}
+
+main {
+  overflow-x: clip;
+}
+
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--gutter);
+}
+
+.work-row {
+  border-top: 1px solid var(--rule);
+  padding-block: var(--size-7);
+  position: relative;
+}
+
+.work-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}

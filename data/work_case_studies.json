@@ -1,0 +1,121 @@
+{
+  "edu-3": {
+    "challenge": "Menyampaikan edukasi teknis mengenai sistem instalasi energi surya fotovoltaik (PLTS) dan pemodelan kode 3D kepada audiens media sosial yang memiliki rentang perhatian pendek (short attention span). Tantangannya adalah menyederhanakan kalkulasi efisiensi energi tanpa menghilangkan presisi teknis keteknikan.",
+    "approach": "Memadukan visual kode interaktif (Remotion & Three.js) dengan hook kinetik 3 detik pertama. Mengintegrasikan bantuan AI untuk sintesis narasi terstruktur dan text-to-speech yang jernih, serta grading warna natural kontras tinggi agar tampilan video tetap tajam di layar perangkat seluler.",
+    "outcome": "Meraih pertumbuhan views organik +304% (dari 1,2 rb menjadi 4,85 rb tayangan) pada kanal Instagram PT Reja Aton Energi, dengan retensi tontonan penuh 82% lebih tinggi dibandingkan video konvensional.",
+    "palette": [
+      { "name": "Deep Slate", "hex": "#0F172A" },
+      { "name": "Solar Cobalt", "hex": "#1E40AF" },
+      { "name": "Sky Blue", "hex": "#38BDF8" },
+      { "name": "Paper White", "hex": "#F8FAFC" },
+      { "name": "Ink Neutral", "hex": "#14120F" }
+    ],
+    "stills": [
+      {
+        "id": "still-edu-01",
+        "title": "Penetapan Hook & Model 3D",
+        "timestamp": "00:03",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794808308019-2werd-edu01-f0.png",
+        "caption": "Adegan pembuka dengan sudut kamera dinamis dan rotasi objek 3D untuk menangkap perhatian audiens dalam 3 detik pertama."
+      },
+      {
+        "id": "still-edu-02",
+        "title": "Struktur Kode & Logika Visual",
+        "timestamp": "00:16",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794751965942-ukf77-sosmed.jpg",
+        "caption": "Transisi ke antarmuka kode Three.js memperlihatkan transparansi teknis di balik animasi simulasi energi."
+      },
+      {
+        "id": "still-edu-03",
+        "title": "Komparasi Efisiensi & Biaya",
+        "timestamp": "00:29",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794752022054-rtcwt-sosial-media.jpg",
+        "caption": "Grafik infografis perbandingan tagihan listrik konvensional vs PLTS atap yang disajikan secara terukur dan padat."
+      },
+      {
+        "id": "still-edu-04",
+        "title": "Penutupan & Call-to-Action",
+        "timestamp": "00:41",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794808308019-2werd-edu01-f0.png",
+        "caption": "Bingkai penutup bergaya editorial dengan identitas resmi PT Reja Aton Energi dan panduan konsultasi instalasi."
+      }
+    ]
+  },
+  "recap-acara-di-pacet": {
+    "challenge": "Merekam kehangatan, interaksi spontan peserta, dan panorama alam Pacet dalam satu video rekap dinamis tanpa membuat penonton merasa jenuh atau tempo terasa berantakan.",
+    "approach": "Penyuntingan ritmis sinkron dengan tempo musik akustik. Mengombinasikan bidikan lanskap sudut lebar (wide aerial/scenic) dengan close-up ekspresi natural, dipadukan color grade bernuansa hangat (warm earth tone).",
+    "outcome": "Menghasilkan video dokumentasi yang membekas, dibagikan berulang kali oleh peserta di platform sosial, dan dijadikan acuan standar dokumentasi acara komunitas selanjutnya.",
+    "palette": [
+      { "name": "Forest Shadow", "hex": "#1C1917" },
+      { "name": "Warm Cedar", "hex": "#78350F" },
+      { "name": "Golden Earth", "hex": "#D97706" },
+      { "name": "Mist Warm", "hex": "#F3EEE3" },
+      { "name": "Charcoal Ink", "hex": "#14120F" }
+    ],
+    "stills": [
+      {
+        "id": "still-pacet-01",
+        "title": "Atmosfer Alam & Panorama Pacet",
+        "timestamp": "00:04",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794820907393-r1eoq-pacet-cover.jpg",
+        "caption": "Bidikan pembuka memperkenalkan lanskap hijau dan ketenangan lokasi kegiatan."
+      },
+      {
+        "id": "still-pacet-02",
+        "title": "Dinamika Kebersamaan Peserta",
+        "timestamp": "00:18",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794820907393-r1eoq-pacet-cover.jpg",
+        "caption": "Momen interaksi spontan yang dirangkai dengan pemotongan tempo cepat mengikuti aksen musik."
+      },
+      {
+        "id": "still-pacet-03",
+        "title": "Pencahayaan Golden Hour",
+        "timestamp": "00:32",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794820907393-r1eoq-pacet-cover.jpg",
+        "caption": "Perlakuan color grading natural mempertahankan saturasi dedaunan dan warna kulit peserta."
+      },
+      {
+        "id": "still-pacet-04",
+        "title": "Montase Puncak Acara",
+        "timestamp": "00:46",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794820907393-r1eoq-pacet-cover.jpg",
+        "caption": "Adegan penutup mengabadikan senyum kebersamaan seluruh tim sebelum transisi fade to black."
+      }
+    ]
+  },
+  "poster-dapbun": {
+    "challenge": "Merancang poster promosi kuliner Dapur Bunda yang memiliki daya pikat visual instan di media sosial sekaligus siap cetak format A3, dengan hirarki informasi yang rapi dan tidak saling tumpang tindih.",
+    "approach": "Penerapan sistem grid tipografi Swiss yang asimetris. Memposisikan foto hidangan utama sebagai pusat perhatian visual (*focal point*), diimbangi blok teks mono untuk detail paket harga dan narasi resep warisan.",
+    "outcome": "Meningkatkan engagement postingan promosi mingguan hingga 45% dan membantu kejelasan informasi menu saat dipajang di gerai fisik.",
+    "palette": [
+      { "name": "Culinary Charcoal", "hex": "#18181B" },
+      { "name": "Chili Crimson", "hex": "#B91C1C" },
+      { "name": "Warm Spice", "hex": "#EA580C" },
+      { "name": "Cream Paper", "hex": "#F3EEE3" },
+      { "name": "Deep Ink", "hex": "#14120F" }
+    ],
+    "stills": [
+      {
+        "id": "still-dapbun-01",
+        "title": "Eksplorasi Grid & Hirarki Teks",
+        "timestamp": "Format A3",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794810740301-0iezv-poster-dapbun-a3.png",
+        "caption": "Tata letak grid modular Swiss memastikan judul menu dan narasi kuliner terbaca jelas dari jarak pandang 2 meter."
+      },
+      {
+        "id": "still-dapbun-02",
+        "title": "Focal Point Komposisi Hidangan",
+        "timestamp": "Detail Visual",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794810740301-0iezv-poster-dapbun-a3.png",
+        "caption": "Penataan pencahayaan hangat menonjolkan tekstur hidangan rumahan agar menggugah selera audiens."
+      },
+      {
+        "id": "still-dapbun-03",
+        "title": "Blok Informasi & Tipografi Mono",
+        "timestamp": "Spesifikasi",
+        "imageUrl": "https://vxhezuplsvqsthutdvpl.supabase.co/storage/v1/object/public/avatars/portfolio/1794810740301-0iezv-poster-dapbun-a3.png",
+        "caption": "Detail nomor pemesanan dan varian paket ditata rapi dalam bingkai garis tipis berkontras tinggi."
+      }
+    ]
+  }
+}
