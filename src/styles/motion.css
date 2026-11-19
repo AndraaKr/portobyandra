@@ -1,6 +1,75 @@
 /* src/styles/motion.css — Sistem Gerak Anti-Mainstream Editorial Swiss (Bab 5) */
 
-/* M1 — Playhead Cut (Transisi Antarhalaman) */
+/* Animasi Panah Interaktif: Hover meluncur lembut, klik melesat */
+.arrow-fly-target {
+  display: inline-flex;
+  transition-property: transform;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+/* Hover: panah condong bergerak sedikit ke arahnya */
+.group:hover .arrow-fly-target.arrow-fly-down,
+button:hover .arrow-fly-target.arrow-fly-down {
+  transform: translateY(4px);
+}
+
+.group:hover .arrow-fly-target.arrow-fly-right,
+button:hover .arrow-fly-target.arrow-fly-right {
+  transform: translateX(4px);
+}
+
+.group:hover .arrow-fly-target.arrow-fly-upright,
+a:hover .arrow-fly-target.arrow-fly-upright {
+  transform: translate(3px, -3px);
+}
+
+/* Aktif / Klik: melesat terbang ke arah panah */
+button:active .arrow-fly-target.arrow-fly-down,
+.group:active .arrow-fly-target.arrow-fly-down {
+  transform: translateY(18px);
+  opacity: 0;
+  transition-duration: 0.08s;
+}
+
+button:active .arrow-fly-target.arrow-fly-right,
+.group:active .arrow-fly-target.arrow-fly-right {
+  transform: translateX(18px);
+  opacity: 0;
+  transition-duration: 0.08s;
+}
+
+a:active .arrow-fly-target.arrow-fly-upright,
+.group:active .arrow-fly-target.arrow-fly-upright {
+  transform: translate(14px, -14px);
+  opacity: 0;
+  transition-duration: 0.08s;
+}
+
+/* Indikator status radar live (status-radar) */
+.status-indicator-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.status-indicator-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 2px;
+  background-color: inherit;
+  opacity: 0.5;
+  animation: status-radar-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; /* status-radar */
+}
+
+@keyframes status-radar-ping {
+  0% { transform: scale(1); opacity: 0.75; }
+  75%, 100% { transform: scale(2.4); opacity: 0; }
+}
 .playhead {
   position: fixed;
   top: 0;
@@ -302,5 +371,34 @@ html:not(.motion-on) .hero-ghost,
 
 .bento-card-enter-delay-2 {
   animation: bento-in var(--dur-slow) cubic-bezier(0.16, 1, 0.3, 1) 150ms forwards;
+}
+
+/* Stagger animasi masuk bagian Pendidikan */
+@keyframes edu-item-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.edu-stagger-hidden {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.edu-stagger-1 {
+  animation: edu-item-in var(--dur-slow) cubic-bezier(0.16, 1, 0.3, 1) 180ms forwards;
+}
+
+.edu-stagger-2 {
+  animation: edu-item-in var(--dur-slow) cubic-bezier(0.16, 1, 0.3, 1) 230ms forwards;
+}
+
+.edu-stagger-3 {
+  animation: edu-item-in var(--dur-slow) cubic-bezier(0.16, 1, 0.3, 1) 250ms forwards;
 }
 

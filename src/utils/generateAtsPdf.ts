@@ -475,17 +475,63 @@ export const generateAtsCvPdf = (
   }
 
   // =========================================================================
-  // 6. SERTIFIKASI (CERTIFICATION)
+  // 6. SERTIFIKASI DAN PELATIHAN (CERTIFICATIONS AND TRAINING)
+  // Format referensi:
+  // • Nama/Penerbit - Bidang/Materi (Kiri, Bold/Normal)      Tahun (Kanan, Bold)
+  //   Kompetensi Utama: Deskripsi (Kiri, Normal)
   // =========================================================================
-  if (safeProfile.certificates && safeProfile.certificates.length > 0) {
-    drawSectionHeader(isId ? 'SERTIFIKASI' : 'CERTIFICATION');
+  const allCerts = safeProfile.certificates || [];
 
-    const certBullets = safeProfile.certificates.map(cert => {
-      const parts = [cert.name, cert.issuer, cert.year].map(p => (p || '').trim()).filter(Boolean);
-      return parts.join(', ');
+  if (allCerts.length > 0) {
+    drawSectionHeader(isId ? 'SERTIFIKASI DAN PELATIHAN' : 'CERTIFICATIONS & TRAINING');
+
+    const bulletIndent = 3.5;
+    const textIndent = 7.2;
+    const lineHeight = 4.1;
+
+    allCerts.forEach(item => {
+      checkPageBreak(item.description ? 10 : 6);
+
+      // Baris 1: Bullet + Judul / Lembaga (Kiri) & Tahun (Kanan)
+      doc.setFont('times', 'normal');
+      doc.setFontSize(9.5);
+      doc.setTextColor(20, 20, 20);
+      doc.text('•', marginX + bulletIndent, currentY);
+
+      // Pisahkan judul dan penerbit bila ada tanda hubung atau gabungkan
+      const titleBold = item.issuer ? `${item.issuer} - ` : '';
+      const titleNormal = item.name || '';
+
+      doc.setFont('times', 'bold');
+      doc.text(titleBold, marginX + textIndent, currentY);
+      const boldW = doc.getTextWidth(titleBold);
+
+      doc.setFont('times', 'normal');
+      doc.text(titleNormal, marginX + textIndent + boldW, currentY);
+
+      // Periode tanggal di kanan: jika ada field period (mis: Agu 2024 - Nov 2024) gunakan itu, jika tidak ada gunakan year
+      const dateText = item.period || item.year;
+      if (dateText) {
+        doc.setFont('times', 'bold');
+        doc.text(dateText, marginX + contentWidth, currentY, { align: 'right' });
+      }
+      currentY += lineHeight;
+
+      // Baris 2: Sub-deskripsi (Kompetensi Utama / Materi)
+      if (item.description) {
+        const descPrefix = isId ? 'Kompetensi Utama: ' : 'Core Competencies: ';
+        const fullDesc = `${descPrefix}${item.description}`;
+        const wrappedDesc = doc.splitTextToSize(fullDesc, contentWidth - textIndent);
+
+        checkPageBreak(wrappedDesc.length * lineHeight);
+        doc.setFont('times', 'normal');
+        doc.text(wrappedDesc, marginX + textIndent, currentY);
+        currentY += wrappedDesc.length * lineHeight;
+      }
+
+      currentY += 1.5;
     });
 
-    drawBulletList(certBullets);
     currentY += 1;
   }
 

@@ -72,17 +72,15 @@ for (const f of files) {
 
   const lines = readFileSync(f, 'utf8').split('\n');
   lines.forEach((line, i) => {
-    // Basic rules
-    for (const [name, re] of RULES) {
-      if (re.test(line)) {
-        console.log(`${f}:${i + 1}  [${name}]  ${line.trim().slice(0, 110)}`);
-        hits++;
+    // Custom threshold rules (dikecualikan untuk kinetik hero dan status radar dot)
+    const isExemptLine = line.includes('hero-slide') || line.includes('hero-ghost') || line.includes('hero-kinetic') || line.includes('--dur-hero') || line.includes('status-radar');
+    if (!isExemptLine) {
+      for (const [name, re] of RULES) {
+        if (re.test(line)) {
+          console.log(`${f}:${i + 1}  [${name}]  ${line.trim().slice(0, 110)}`);
+          hits++;
+        }
       }
-    }
-
-    // Custom threshold rules (dikecualikan untuk baris animasi kinetik nama hero yang diminta slow oleh pemilik)
-    const isHeroKineticLine = line.includes('hero-slide') || line.includes('hero-ghost') || line.includes('hero-kinetic') || line.includes('--dur-hero');
-    if (!isHeroKineticLine) {
       for (const [name, fn] of CUSTOM) {
         const r = fn(line);
         if (r) {

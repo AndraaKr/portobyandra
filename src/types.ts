@@ -112,6 +112,13 @@ export interface Certificate {
   year: string;
   url?: string;
   description?: string;
+  type?: 'sertifikat' | 'pelatihan';
+  /** Masa berlaku / masa kedaluwarsa sertifikat (misal: "2024 - 2027", "Seumur Hidup") */
+  validity?: string;
+  /** Durasi pelatihan (misal: "3 Bulan", "40 Jam") */
+  duration?: string;
+  /** Periode pelaksanaan pelatihan khusus bulan & tahun (misal: "Agu 2024 - Nov 2024") */
+  period?: string;
 }
 
 export interface SiteProfile {
@@ -129,6 +136,8 @@ export interface SiteProfile {
   gpa?: string;
   /** Mata kuliah / fokus studi relevan yang tampil sebagai tag di Tentang Saya */
   coursework?: string[];
+  /** Status ketersediaan kerja, misal 'OPEN TO WORK', 'LIMITED AVAILABILITY', 'UNAVAILABLE' */
+  availabilityStatus?: string;
   currentRole: string;
   socials: {
     github: string;

@@ -110,6 +110,7 @@ export const AdminDashboardPage: React.FC = () => {
   const [profileForm, setProfileForm] = useState({
     name: '', shortName: '', title: '', tagline: '', bio: '',
     email: '', phone: '', location: '', education: '', gpa: '', coursework: '', currentRole: '',
+    availabilityStatus: 'OPEN TO WORK',
     github: '', linkedin: '', instagram: '', youtube: '', website: '',
     skillsUiux: '', skillsAiTools: '', skillsMultimedia: '', skillsMarketing: '',
   });
@@ -136,6 +137,7 @@ export const AdminDashboardPage: React.FC = () => {
       gpa: siteProfile.gpa ?? '',
       coursework: (siteProfile.coursework ?? []).join(', '),
       currentRole: siteProfile.currentRole,
+      availabilityStatus: siteProfile.availabilityStatus || 'OPEN TO WORK',
       github: siteProfile.socials.github,
       linkedin: siteProfile.socials.linkedin,
       instagram: siteProfile.socials.instagram,
@@ -154,8 +156,19 @@ export const AdminDashboardPage: React.FC = () => {
 
   const splitTags = (v: string) => v.split(',').map(t => t.trim()).filter(Boolean);
 
-  const addCertRow = () =>
-    setCertForm(prev => [...prev, { id: `cert-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', issuer: '', year: '', url: '', description: '' }]);
+  const addCertRow = (type: 'sertifikat' | 'pelatihan' = 'sertifikat') =>
+    setCertForm(prev => [
+      ...prev,
+      {
+        id: `cert-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: '',
+        issuer: '',
+        year: '',
+        url: '',
+        description: '',
+        type,
+      },
+    ]);
   const updateCertRow = (id: string, field: keyof Certificate, value: string) =>
     setCertForm(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
   const removeCertRow = (id: string) => setCertForm(prev => prev.filter(c => c.id !== id));
@@ -177,6 +190,7 @@ export const AdminDashboardPage: React.FC = () => {
       gpa: profileForm.gpa.trim(),
       coursework: splitTags(profileForm.coursework),
       currentRole: profileForm.currentRole.trim(),
+      availabilityStatus: profileForm.availabilityStatus.trim(),
       socials: {
         github: profileForm.github.trim(),
         linkedin: profileForm.linkedin.trim(),
@@ -1173,6 +1187,32 @@ export const AdminDashboardPage: React.FC = () => {
                 <textarea value={profileForm.bio} onChange={setPF('bio')} rows={5} className="input-swiss resize-y" />
               </div>
               <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Status Ketersediaan Kerja (Status Bar Profil)</label>
+                <div className="flex gap-2 mb-2">
+                  <select
+                    value={profileForm.availabilityStatus}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, availabilityStatus: e.target.value }))}
+                    className="input-swiss bg-paper cursor-pointer py-1 text-xs"
+                  >
+                    <option value="OPEN TO WORK">● OPEN TO WORK (Siap menerima pekerjaan/proyek penuh)</option>
+                    <option value="OPEN FOR CONTRACT / INTERN">◐ OPEN FOR CONTRACT / INTERN (Sedang magang/kontrak, fleksibel)</option>
+                    <option value="LIMITED AVAILABILITY">◐ LIMITED AVAILABILITY (Jadwal padat, selektif freelance ringan)</option>
+                    <option value="BUSY / FULL-TIME">■ BUSY / FULL-TIME (Jadwal penuh, tidak menerima side job/freelance)</option>
+                    <option value="UNAVAILABLE">■ UNAVAILABLE (Tidak tersedia saat ini)</option>
+                  </select>
+                </div>
+                <input
+                  value={profileForm.availabilityStatus}
+                  onChange={setPF('availabilityStatus')}
+                  placeholder="Ketik status kustom atau pilih dari dropdown di atas"
+                  className="input-swiss text-xs"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block label-mono text-ink mb-1">Status Pekerjaan / Peran Saat Ini (tampil di Status Bar Profil)</label>
+                <input value={profileForm.currentRole} onChange={setPF('currentRole')} placeholder="DIGITAL MARKETING INTERN" className="input-swiss" />
+              </div>
+              <div className="sm:col-span-2">
                 <label className="block label-mono text-ink mb-1">Pendidikan</label>
                 <input value={profileForm.education} onChange={setPF('education')} className="input-swiss" />
               </div>
@@ -1257,34 +1297,154 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
+          {/* KARTU 1: SERTIFIKASI PROFESIONAL RESMI */}
           <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
             <div className="flex items-center justify-between border-b border-rule pb-2">
-              <h3 className="font-bold text-sm text-ink">Sertifikat</h3>
+              <div>
+                <h3 className="font-bold text-sm text-ink">Sertifikasi Resmi (Lisensi &amp; Profesi)</h3>
+                <p className="label-mono text-xs text-ink-2 mt-0.5">Sertifikasi keahlian, lisensi BNSP/industri, atau ujian profesi.</p>
+              </div>
               <button
                 type="button"
-                onClick={addCertRow}
+                onClick={() => addCertRow('sertifikat')}
                 className="btn-primary text-xs py-1 px-3"
               >
-                <Plus className="w-3.5 h-3.5" /> Tambah
+                <Plus className="w-3.5 h-3.5" /> + Tambah Sertifikat
               </button>
             </div>
-            {certForm.map((cert) => (
-              <div key={cert.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
-                <input value={cert.name} onChange={(e) => updateCertRow(cert.id, 'name', e.target.value)} placeholder="Nama sertifikat" className="input-swiss sm:col-span-5" />
-                <input value={cert.issuer} onChange={(e) => updateCertRow(cert.id, 'issuer', e.target.value)} placeholder="Penerbit" className="input-swiss sm:col-span-3" />
-                <input value={cert.year} onChange={(e) => updateCertRow(cert.id, 'year', e.target.value)} placeholder="Tahun" className="input-swiss sm:col-span-2" />
-                <button
-                  type="button"
-                  onClick={() => removeCertRow(cert.id)}
-                  className="sm:col-span-2 btn-primary text-xs py-1 px-2"
-                  style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Hapus
-                </button>
-                <input value={cert.description || ''} onChange={(e) => updateCertRow(cert.id, 'description', e.target.value)} placeholder="Deskripsi kompetensi (tampil di kartu sertifikat)" className="input-swiss sm:col-span-12" />
-                <input value={cert.url || ''} onChange={(e) => updateCertRow(cert.id, 'url', e.target.value)} placeholder="Link sertifikat (URL)" className="input-swiss sm:col-span-12" />
+
+            {certForm.filter(c => c.type !== 'pelatihan').length === 0 ? (
+              <p className="label-mono text-xs text-ink-2 py-2">Belum ada sertifikat ditambahkan.</p>
+            ) : (
+              certForm
+                .filter(c => c.type !== 'pelatihan')
+                .map((cert) => (
+                  <div key={cert.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+                    <input
+                      value={cert.name}
+                      onChange={(e) => updateCertRow(cert.id, 'name', e.target.value)}
+                      placeholder="Nama Sertifikasi (mis: BNSP Digital Marketing)"
+                      className="input-swiss sm:col-span-5"
+                    />
+                    <input
+                      value={cert.issuer}
+                      onChange={(e) => updateCertRow(cert.id, 'issuer', e.target.value)}
+                      placeholder="Lembaga Penerbit"
+                      className="input-swiss sm:col-span-3"
+                    />
+                    <input
+                      value={cert.year}
+                      onChange={(e) => updateCertRow(cert.id, 'year', e.target.value)}
+                      placeholder="Tahun Perolehan"
+                      className="input-swiss sm:col-span-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCertRow(cert.id)}
+                      className="sm:col-span-2 btn-primary text-xs py-1 px-2"
+                      style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Hapus
+                    </button>
+                    <input
+                      value={cert.validity || ''}
+                      onChange={(e) => updateCertRow(cert.id, 'validity', e.target.value)}
+                      placeholder="Masa Berlaku / Kadaluarsa (mis: Berlaku s.d. Nov 2027 atau Seumur Hidup)"
+                      className="input-swiss sm:col-span-6"
+                    />
+                    <input
+                      value={cert.url || ''}
+                      onChange={(e) => updateCertRow(cert.id, 'url', e.target.value)}
+                      placeholder="Link Kredensial / Verifikasi Sertifikat (URL)"
+                      className="input-swiss sm:col-span-6"
+                    />
+                    <input
+                      value={cert.description || ''}
+                      onChange={(e) => updateCertRow(cert.id, 'description', e.target.value)}
+                      placeholder="Deskripsi ringkas / kompetensi yang diujikan"
+                      className="input-swiss sm:col-span-12"
+                    />
+                  </div>
+                ))
+            )}
+          </div>
+
+          {/* KARTU 2: PELATIHAN, WORKSHOP & BOOTCAMP */}
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <div className="flex items-center justify-between border-b border-rule pb-2">
+              <div>
+                <h3 className="font-bold text-sm text-ink">Pelatihan, Workshop &amp; Bootcamp</h3>
+                <p className="label-mono text-xs text-ink-2 mt-0.5">Program pengembangan keahlian, durasi jam/minggu, dan intensif belajar.</p>
               </div>
-            ))}
+              <button
+                type="button"
+                onClick={() => addCertRow('pelatihan')}
+                className="btn-primary text-xs py-1 px-3"
+              >
+                <Plus className="w-3.5 h-3.5" /> + Tambah Pelatihan
+              </button>
+            </div>
+
+            {certForm.filter(c => c.type === 'pelatihan').length === 0 ? (
+              <p className="label-mono text-xs text-ink-2 py-2">Belum ada pelatihan ditambahkan.</p>
+            ) : (
+              certForm
+                .filter(c => c.type === 'pelatihan')
+                .map((pelatihan) => (
+                  <div key={pelatihan.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+                    <input
+                      value={pelatihan.name}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'name', e.target.value)}
+                      placeholder="Nama Program Pelatihan / Workshop"
+                      className="input-swiss sm:col-span-5"
+                    />
+                    <input
+                      value={pelatihan.issuer}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'issuer', e.target.value)}
+                      placeholder="Penyelenggara / Platform"
+                      className="input-swiss sm:col-span-3"
+                    />
+                    <input
+                      value={pelatihan.year}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'year', e.target.value)}
+                      placeholder="Tahun"
+                      className="input-swiss sm:col-span-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCertRow(pelatihan.id)}
+                      className="sm:col-span-2 btn-primary text-xs py-1 px-2"
+                      style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Hapus
+                    </button>
+                    <input
+                      value={pelatihan.period || ''}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'period', e.target.value)}
+                      placeholder="Periode Pelaksanaan (mis: Mei 2024 atau Agu 2024 - Nov 2024)"
+                      className="input-swiss sm:col-span-4"
+                    />
+                    <input
+                      value={pelatihan.duration || ''}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'duration', e.target.value)}
+                      placeholder="Durasi Total (mis: 3 Bulan / 48 Jam)"
+                      className="input-swiss sm:col-span-4"
+                    />
+                    <input
+                      value={pelatihan.url || ''}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'url', e.target.value)}
+                      placeholder="Link Portofolio Proyek / Bukti Kelulusan (URL)"
+                      className="input-swiss sm:col-span-4"
+                    />
+                    <input
+                      value={pelatihan.description || ''}
+                      onChange={(e) => updateCertRow(pelatihan.id, 'description', e.target.value)}
+                      placeholder="Materi utama yang dipelajari selama pelatihan"
+                      className="input-swiss sm:col-span-12"
+                    />
+                  </div>
+                ))
+            )}
           </div>
 
           {profileStatus && (

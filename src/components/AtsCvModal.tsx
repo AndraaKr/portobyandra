@@ -398,16 +398,30 @@ export const AtsCvModal: React.FC<AtsCvModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              {/* Sertifikasi */}
+              {/* Sertifikasi dan Pelatihan (Mengikuti format gambar referensi) */}
               {p.certificates.length > 0 && (
                 <div className="space-y-1.5 pt-1">
                   <div className="font-bold uppercase tracking-wide text-[13px] border-b border-rule pb-0.5 text-ink">
-                    {isId ? 'SERTIFIKASI' : 'CERTIFICATION'}
+                    {isId ? 'SERTIFIKASI DAN PELATIHAN' : 'CERTIFICATIONS & TRAINING'}
                   </div>
-                  <ul className="list-disc list-outside pl-5 text-[12.5px] text-ink space-y-0.5">
+                  <ul className="list-disc list-outside pl-5 text-[12.5px] text-ink space-y-2">
                     {p.certificates.map((cert) => (
-                      <li key={cert.id}>
-                        {[cert.name, cert.issuer, cert.year].filter(Boolean).join(', ')}
+                      <li key={cert.id} className="space-y-0.5">
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-ink">
+                            <strong>{cert.issuer ? `${cert.issuer} - ` : ''}</strong>
+                            {cert.name}
+                          </span>
+                          {(cert.period || cert.year) && (
+                            <span className="font-bold text-ink shrink-0">{cert.period || cert.year}</span>
+                          )}
+                        </div>
+                        {cert.description && (
+                          <div className="text-[12px] text-ink-2 pl-0">
+                            <span className="font-medium text-ink">{isId ? 'Kompetensi Utama: ' : 'Core Competencies: '}</span>
+                            {cert.description}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ul>

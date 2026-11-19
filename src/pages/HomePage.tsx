@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Award } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Award, Download } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
+import { downloadAtsCvPdf } from '../utils/generateAtsPdf';
 import { Filmstrip } from '../components/work/Filmstrip';
 import { HomeWorkGrid } from '../components/home/HomeWorkGrid';
 import { Ruler } from '../components/motion/Ruler';
@@ -172,29 +173,32 @@ export const HomePage: React.FC = () => {
           </h1>
         </div>
 
-        {/* Pengantar dengan Animasi Ketikkan Mesin Tik & Satu Tautan Aksi */}
-        <div className="border-t border-rule pt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          {tagline ? (
-            <p className="text-ink font-sans text-sm sm:text-base leading-relaxed max-w-[50ch] min-h-[3.5rem] sm:min-h-[3rem]">
-              <TypewriterText
-                text={tagline}
-                speed={24}
-                delay={450}
-                cursorChar="▍"
-                replayKey={kineticKey}
-              />
-            </p>
-          ) : (
-            <div />
-          )}
+        {/* Pengantar Aksi Hero: Tombol Unduh CV & Tautan Lihat Karya */}
+        <div className="border-t border-rule pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                if (siteProfile) {
+                  downloadAtsCvPdf(siteProfile, experiences, portfolioItems, { language: 'id', includeProjects: true });
+                }
+              }}
+              className="btn-primary inline-flex items-center gap-2 min-h-[44px]"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Unduh CV (ATS)</span>
+            </button>
+          </div>
 
           <button
             type="button"
-            onClick={scrollToKarya}
-            className="inline-flex items-center gap-2 label-mono text-xs text-ink font-semibold hover:underline cursor-pointer bg-transparent border-none p-0 shrink-0 min-h-[44px] accent-link"
+            onClick={() => setActiveTab('portofolio')}
+            className="group inline-flex items-center gap-2 label-mono text-xs text-ink font-semibold hover:underline cursor-pointer bg-transparent border-none p-0 shrink-0 min-h-[44px] accent-link"
           >
             <span>Lihat karya</span>
-            <ArrowDown className="w-4 h-4" />
+            <span className="arrow-fly-target arrow-fly-right">
+              <ArrowRight className="w-4 h-4" />
+            </span>
           </button>
         </div>
       </section>
@@ -355,7 +359,7 @@ export const HomePage: React.FC = () => {
                     <div className="flex items-center gap-2">
                       <Award className="w-4 h-4 text-vermilion shrink-0" />
                       <span className="label-mono text-xs text-ink font-bold">
-                        SERTIFIKAT 0{cIdx + 1}
+                        {cert.type === 'pelatihan' ? 'PELATIHAN' : 'SERTIFIKAT'} 0{cIdx + 1}
                       </span>
                     </div>
                     <span className="label-mono text-xs text-ink-2 font-semibold">
@@ -411,17 +415,24 @@ export const HomePage: React.FC = () => {
           05 KONTAK (Formulir Langsung di Beranda Tanpa Tombol Buka Halaman)
           ======================================================== */}
       <section id="section-kontak" className="border-t border-rule pt-8 sm:pt-10 mb-8">
-        <div className="flex items-baseline gap-3 mb-3">
+        <div className="flex items-baseline gap-3 mb-4">
           <span className="label-mono text-xs text-vermilion font-bold">05</span>
-          <h2 className="font-serif text-2xl sm:text-3xl text-ink">Kontak</h2>
+          <h2
+            className="text-ink font-serif tracking-tight select-none"
+            style={{
+              fontSize: 'var(--step-display-l)',
+              lineHeight: 0.92,
+              letterSpacing: '-0.03em',
+            }}
+          >
+            Mari berkolaborasi
+          </h2>
         </div>
 
-        {/* Deskripsi Kolaborasi */}
-        <p className="text-ink font-sans text-sm sm:text-base leading-relaxed max-w-2xl mb-8">
-          Tertarik bekerja sama atau ingin mendiskusikan kebutuhan proyek? Siap berkolaborasi untuk
-          produksi video komersial, motion design, strategi konten digital marketing, maupun
-          kebutuhan visual lainnya. Silakan hubungi langsung melalui surel atau lengkapi formulir di
-          bawah ini.
+        {/* Deskripsi Singkat Kolaborasi */}
+        <p className="text-ink-2 font-sans text-sm sm:text-base leading-relaxed max-w-2xl mb-8">
+          Punya ide proyek, kebutuhan video sinematik, desain antarmuka, atau strategi digital marketing?
+          Mari diskusikan bersama untuk mewujudkan visual dan hasil nyata yang terukur.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12 pt-6 border-t border-rule">
@@ -442,17 +453,20 @@ export const HomePage: React.FC = () => {
                 <span className="label-mono text-xs text-ink-2 block mb-2">SALURAN PROFESIONAL</span>
                 <div className="flex flex-col gap-2">
                   {Object.entries(siteProfile.socials).map(([platform, url]) => {
-                    if (!url) return null;
+                    // Kecualikan website URL karena user sudah berada di situs ini
+                    if (!url || platform === 'website') return null;
                     return (
                       <a
                         key={platform}
                         href={url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-link label-mono text-xs text-ink capitalize min-h-[44px] flex items-center gap-1"
+                        className="group text-link label-mono text-xs text-ink capitalize min-h-[44px] flex items-center gap-1.5"
                       >
                         <span>{platform}</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
+                        <span className="arrow-fly-target arrow-fly-upright">
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </span>
                       </a>
                     );
                   })}
@@ -461,9 +475,13 @@ export const HomePage: React.FC = () => {
             )}
 
             <div className="border-t border-rule pt-4">
-              <span className="label-mono text-xs text-ink-2 block">DOMISILI &amp; WAKTU RESPONS</span>
+              <span className="label-mono text-xs text-ink-2 block">DOMISILI &amp; STATUS KERJA</span>
               <p className="font-sans text-xs text-ink-2 mt-1 leading-relaxed">
-                Surabaya, Indonesia — Balasan surel biasanya disampaikan dalam 1×24 jam kerja.
+                {siteProfile?.location || 'Surabaya, Indonesia'} —{' '}
+                <span className="text-ink font-semibold">
+                  {siteProfile?.availabilityStatus || 'OPEN TO WORK'}
+                </span>
+                . Respon surel dalam 1×24 jam kerja.
               </p>
             </div>
           </div>
@@ -549,10 +567,12 @@ export const HomePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isContactSubmitting}
-                className="btn-primary text-xs inline-flex items-center gap-2 min-h-[44px]"
+                className="group btn-primary text-xs inline-flex items-center gap-2 min-h-[44px]"
               >
                 <span>{isContactSubmitting ? 'Mengirim...' : 'Kirim Pesan'}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-paper" />
+                <span className="arrow-fly-target arrow-fly-right">
+                  <ArrowRight className="w-3.5 h-3.5 text-paper" />
+                </span>
               </button>
             </form>
           </div>

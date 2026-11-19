@@ -243,6 +243,7 @@ const DEFAULT_SITE_PROFILE: SiteProfile = {
   education: '',
   gpa: '',
   coursework: [],
+  availabilityStatus: 'OPEN TO WORK',
   currentRole: '',
   socials: { github: '', linkedin: '', instagram: '', youtube: '', website: '' },
   skills: { uiux: [], frontend: [], multimedia: [], marketing: [] },
@@ -267,7 +268,9 @@ const mapSiteProfileFromDb = (row: any): SiteProfile => ({
     : Array.isArray(row.skills?.coursework)
       ? row.skills.coursework
       : [],
-  currentRole: row.current_role_label ?? '',
+  // GPA, coursework, dan currentRole cadangan jika kolom tabel belum ada
+  availabilityStatus: row.availability_status ?? row.skills?.availabilityStatus ?? 'OPEN TO WORK',
+  currentRole: row.current_role_label ?? row.skills?.currentRole ?? row.skills?.current_role ?? '',
   socials: {
     github: row.github_url ?? '',
     linkedin: row.linkedin_url ?? '',
@@ -302,10 +305,27 @@ const mapSiteProfileToDb = (updates: Partial<SiteProfile>) => {
   if (updates.socials?.instagram !== undefined) row.instagram_url = updates.socials.instagram;
   if (updates.socials?.youtube !== undefined) row.youtube_url = updates.socials.youtube;
   if (updates.socials?.website !== undefined) row.website_url = updates.socials.website;
-  if (updates.skills !== undefined) row.skills = { ...updates.skills };
-  if (updates.gpa !== undefined) row.skills = { ...(row.skills ?? {}), gpa: updates.gpa };
-  if (updates.coursework !== undefined) row.skills = { ...(row.skills ?? {}), coursework: updates.coursework };
   if (updates.certificates !== undefined) row.certificates = updates.certificates;
+
+  // Bangun payload skills dengan menggabungkan field ekstensi agar tidak tertimpa
+  const skillsPayload: Record<string, any> = updates.skills ? { ...updates.skills } : {};
+  if (updates.availabilityStatus !== undefined) {
+    skillsPayload.availabilityStatus = updates.availabilityStatus;
+  }
+  if (updates.currentRole !== undefined) {
+    skillsPayload.currentRole = updates.currentRole;
+  }
+  if (updates.gpa !== undefined) {
+    skillsPayload.gpa = updates.gpa;
+  }
+  if (updates.coursework !== undefined) {
+    skillsPayload.coursework = updates.coursework;
+  }
+
+  if (Object.keys(skillsPayload).length > 0) {
+    row.skills = skillsPayload;
+  }
+
   return row;
 };
 

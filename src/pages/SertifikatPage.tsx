@@ -52,10 +52,15 @@ export const SertifikatPage: React.FC = () => {
                 className="py-5 sm:py-6 flex flex-col sm:flex-row sm:items-baseline justify-between gap-3 sm:gap-6 group hover:bg-paper-2 transition-colors duration-120 px-2 -mx-2"
               >
                 <div className="flex items-baseline gap-4 sm:gap-6">
-                  {/* Nomor Urut Mono */}
-                  <span className="label-mono text-xs text-ink-2 font-bold shrink-0">
-                    [{indexStr}]
-                  </span>
+                  {/* Nomor Urut Mono & Label Tipe */}
+                  <div className="flex flex-col sm:items-start shrink-0">
+                    <span className="label-mono text-xs text-ink-2 font-bold">
+                      [{indexStr}]
+                    </span>
+                    <span className="label-mono text-xs text-ink uppercase font-semibold mt-0.5">
+                      {cert.type === 'pelatihan' ? 'Pelatihan' : 'Sertifikat'}
+                    </span>
+                  </div>
 
                   <div>
                     <h2 className="text-ink font-sans text-base sm:text-lg font-semibold leading-snug">

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, GraduationCap } from 'lucide-react';
 import type { SiteProfile } from '../../types';
 import { SkillIcon } from './SkillIcon';
+import { TypewriterText } from '../motion/TypewriterText';
 
 interface AboutBentoProps {
   siteProfile: SiteProfile | null;
@@ -100,7 +101,7 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
                   height={400}
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-auto aspect-[4/5] object-cover border border-rule grayscale contrast-105"
+                  className="w-full h-auto aspect-[4/5] object-cover border border-rule"
                 />
               ) : (
                 <div className="w-full aspect-[4/5] bg-paper-2 border border-rule flex items-center justify-center">
@@ -110,17 +111,24 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
             </div>
           </div>
 
-          {/* Status Bar HUD: OPEN TO WORK & Lokasi */}
+          {/* Status Bar HUD: Status Ketersediaan & Lokasi */}
           <div className="border-t border-rule p-4 bg-paper-2 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span
-                  className="w-2 h-2 shrink-0 rounded-sm"
-                  style={{ backgroundColor: 'var(--status-live)' }}
+                  className="status-indicator-dot"
+                  style={{
+                    backgroundColor:
+                      siteProfile?.availabilityStatus === 'UNAVAILABLE' || siteProfile?.availabilityStatus === 'BUSY / FULL-TIME'
+                        ? 'var(--vermilion)'
+                        : siteProfile?.availabilityStatus === 'LIMITED AVAILABILITY' || siteProfile?.availabilityStatus === 'OPEN FOR CONTRACT / INTERN'
+                        ? 'var(--ink)'
+                        : 'var(--status-live)',
+                  }}
                   aria-hidden="true"
                 />
                 <span className="label-mono text-xs font-bold text-ink tracking-wider">
-                  OPEN TO WORK
+                  {siteProfile?.availabilityStatus || 'OPEN TO WORK'}
                 </span>
               </div>
               <span className="label-mono text-xs text-ink-2 uppercase">
@@ -144,20 +152,49 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
           }`}
         >
           <div className="space-y-6">
-            {/* Bagian Atas: Sapaan & Narasi Bio */}
+            {/* Bagian Atas: Sapaan & Narasi Bio dengan Animasi Ketik Bertahap */}
             <div className="space-y-3">
               <h3 className="font-serif text-2xl sm:text-3xl text-ink leading-snug">
-                Hi, Aku Muhammad Andra Kusuma Ramadhan
+                {isVisible ? (
+                  <TypewriterText
+                    text="Hi, Aku Muhammad Andra Kusuma Ramadhan"
+                    speed={28}
+                    delay={100}
+                    blinkCountAfterFinish={0}
+                  />
+                ) : (
+                  <span>Hi, Aku Muhammad Andra Kusuma Ramadhan</span>
+                )}
               </h3>
-              <p className="font-sans text-sm sm:text-base text-ink-2 leading-relaxed">
-                {siteProfile?.bio ||
-                  'Lulusan Ilmu Komunikasi yang sehari-hari ngulik video editing, motion graphics, dan digital marketing. Suka bikin konten yang enak ditonton sekaligus bisa ngasih hasil nyata buat brand — mulai dari ngedit video promosi sampai ngatur strategi konten di media sosial.'}
-              </p>
+              <div className="font-sans text-sm sm:text-base text-ink-2 leading-relaxed">
+                {isVisible ? (
+                  <TypewriterText
+                    text={
+                      siteProfile?.bio ||
+                      'Lulusan Sarjana Terapan (D4) Teknik Informatika angkatan 2025 yang menggabungkan presisi engineering dan daya visual kreatif. Saat ini berfokus pada strategi Digital Marketing dengan keahlian mendalam pada UI/UX Design, Front-End Development, Video Editing sinematik, serta Content Writing.'
+                    }
+                    speed={14}
+                    delay={1200}
+                    blinkCountAfterFinish={2}
+                    as="p"
+                  />
+                ) : (
+                  <p>
+                    {siteProfile?.bio ||
+                      'Lulusan Sarjana Terapan (D4) Teknik Informatika angkatan 2025 yang menggabungkan presisi engineering dan daya visual kreatif. Saat ini berfokus pada strategi Digital Marketing dengan keahlian mendalam pada UI/UX Design, Front-End Development, Video Editing sinematik, serta Content Writing.'}
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* Bagian Bawah Terintegrasi: Info Pendidikan & Callout IPK 3.78 Vermilion */}
+            {/* Bagian Bawah Terintegrasi: Info Pendidikan & Callout IPK 3.78 Vermilion (Animasi Stagger Masuk) */}
             <div className="pt-5 border-t border-rule space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
+              {/* Langkah 1: Bar Header Pendidikan */}
+              <div
+                className={`flex items-center justify-between flex-wrap gap-2 ${
+                  isVisible ? 'edu-stagger-1' : 'edu-stagger-hidden'
+                }`}
+              >
                 <div className="flex items-center gap-2">
                   <GraduationCap className="w-4 h-4 text-ink shrink-0" />
                   <span className="label-mono text-xs text-ink-2 font-bold uppercase tracking-wider">
@@ -169,8 +206,12 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
                 </span>
               </div>
 
-              {/* Grid Baris: Institusi & Widget Nilai GPA Vermilion */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-paper-2 border border-rule p-4 rounded-sm">
+              {/* Langkah 2: Kotak Institusi & Nilai IPK */}
+              <div
+                className={`grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-paper-2 border border-rule p-4 rounded-sm ${
+                  isVisible ? 'edu-stagger-2' : 'edu-stagger-hidden'
+                }`}
+              >
                 <div className="sm:col-span-8 space-y-1">
                   <h4 className="font-sans font-bold text-sm sm:text-base text-ink">
                     {siteProfile?.education || 'S1 Ilmu Komunikasi — Universitas 17 Agustus 1945 Surabaya'}
@@ -196,8 +237,12 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
                 </div>
               </div>
 
-              {/* Tags / Coursework Mata Kuliah Relevan */}
-              <div className="flex flex-wrap gap-2 pt-1">
+              {/* Langkah 3: Tags / Coursework Mata Kuliah Relevan */}
+              <div
+                className={`flex flex-wrap gap-2 pt-1 ${
+                  isVisible ? 'edu-stagger-3' : 'edu-stagger-hidden'
+                }`}
+              >
                 {courseworkList.map((item) => (
                   <span
                     key={item}
