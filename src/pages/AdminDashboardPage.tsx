@@ -281,6 +281,25 @@ export const AdminDashboardPage: React.FC = () => {
   const updateCertRow = (id: string, field: keyof Certificate, value: string) =>
     setCertForm(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
   const removeCertRow = (id: string) => setCertForm(prev => prev.filter(c => c.id !== id));
+  const moveCertRow = (id: string, groupType: 'sertifikat' | 'pelatihan', direction: 'up' | 'down') => {
+    setCertForm(prev => {
+      const groupItems = prev.filter(c =>
+        groupType === 'pelatihan' ? c.type === 'pelatihan' : c.type !== 'pelatihan'
+      );
+      const otherItems = prev.filter(c =>
+        groupType === 'pelatihan' ? c.type !== 'pelatihan' : c.type === 'pelatihan'
+      );
+      const idx = groupItems.findIndex(c => c.id === id);
+      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (idx === -1 || targetIdx < 0 || targetIdx >= groupItems.length) return prev;
+      const nextGroup = [...groupItems];
+      const [moved] = nextGroup.splice(idx, 1);
+      nextGroup.splice(targetIdx, 0, moved);
+      return groupType === 'pelatihan'
+        ? [...otherItems, ...nextGroup]
+        : [...nextGroup, ...otherItems];
+    });
+  };
 
   const handleProfileSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1635,60 +1654,85 @@ export const AdminDashboardPage: React.FC = () => {
               </button>
             </div>
 
-            {certForm.filter(c => c.type !== 'pelatihan').length === 0 ? (
-              <p className="label-mono text-xs text-ink-2 py-2">Belum ada sertifikat ditambahkan.</p>
-            ) : (
-              certForm
-                .filter(c => c.type !== 'pelatihan')
-                .map((cert) => (
-                  <div key={cert.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
-                    <input
-                      value={cert.name}
-                      onChange={(e) => updateCertRow(cert.id, 'name', e.target.value)}
-                      placeholder="Nama Sertifikasi (mis: BNSP Digital Marketing)"
-                      className="input-swiss sm:col-span-5"
-                    />
-                    <input
-                      value={cert.issuer}
-                      onChange={(e) => updateCertRow(cert.id, 'issuer', e.target.value)}
-                      placeholder="Lembaga Penerbit"
-                      className="input-swiss sm:col-span-3"
-                    />
-                    <input
-                      value={cert.year}
-                      onChange={(e) => updateCertRow(cert.id, 'year', e.target.value)}
-                      placeholder="Tahun Perolehan"
-                      className="input-swiss sm:col-span-2"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeCertRow(cert.id)}
-                      className="sm:col-span-2 btn-primary text-xs py-1 px-2"
-                      style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Hapus
-                    </button>
-                    <input
-                      value={cert.validity || ''}
-                      onChange={(e) => updateCertRow(cert.id, 'validity', e.target.value)}
-                      placeholder="Masa Berlaku / Kadaluarsa (mis: Berlaku s.d. Nov 2027 atau Seumur Hidup)"
-                      className="input-swiss sm:col-span-6"
-                    />
-                    <input
-                      value={cert.url || ''}
-                      onChange={(e) => updateCertRow(cert.id, 'url', e.target.value)}
-                      placeholder="Link Kredensial / Verifikasi Sertifikat (URL)"
-                      className="input-swiss sm:col-span-6"
-                    />
-                    <input
-                      value={cert.description || ''}
-                      onChange={(e) => updateCertRow(cert.id, 'description', e.target.value)}
-                      placeholder="Deskripsi ringkas / kompetensi yang diujikan"
-                      className="input-swiss sm:col-span-12"
-                    />
+            {(() => {
+              const sertifikatList = certForm.filter(c => c.type !== 'pelatihan');
+              if (sertifikatList.length === 0) {
+                return <p className="label-mono text-xs text-ink-2 py-2">Belum ada sertifikat ditambahkan.</p>;
+              }
+              return sertifikatList.map((cert, idx) => (
+                <div key={cert.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+                  <div className="sm:col-span-12 flex items-center justify-between pb-1.5 mb-1 border-b border-rule">
+                    <span className="label-mono text-xs font-bold text-ink">
+                      Sertifikat #{idx + 1}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveCertRow(cert.id, 'sertifikat', 'up')}
+                        title="Geser ke atas"
+                        className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === sertifikatList.length - 1}
+                        onClick={() => moveCertRow(cert.id, 'sertifikat', 'down')}
+                        title="Geser ke bawah"
+                        className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeCertRow(cert.id)}
+                        title="Hapus sertifikat"
+                        className="p-1 border border-rule text-ink hover:bg-paper ml-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                ))
-            )}
+                  <input
+                    value={cert.name}
+                    onChange={(e) => updateCertRow(cert.id, 'name', e.target.value)}
+                    placeholder="Nama Sertifikasi (mis: BNSP Digital Marketing)"
+                    className="input-swiss sm:col-span-6"
+                  />
+                  <input
+                    value={cert.issuer}
+                    onChange={(e) => updateCertRow(cert.id, 'issuer', e.target.value)}
+                    placeholder="Lembaga Penerbit"
+                    className="input-swiss sm:col-span-4"
+                  />
+                  <input
+                    value={cert.year}
+                    onChange={(e) => updateCertRow(cert.id, 'year', e.target.value)}
+                    placeholder="Tahun Perolehan"
+                    className="input-swiss sm:col-span-2"
+                  />
+                  <input
+                    value={cert.validity || ''}
+                    onChange={(e) => updateCertRow(cert.id, 'validity', e.target.value)}
+                    placeholder="Masa Berlaku / Kadaluarsa (mis: Berlaku s.d. Nov 2027 atau Seumur Hidup)"
+                    className="input-swiss sm:col-span-6"
+                  />
+                  <input
+                    value={cert.url || ''}
+                    onChange={(e) => updateCertRow(cert.id, 'url', e.target.value)}
+                    placeholder="Link Kredensial / Verifikasi Sertifikat (URL)"
+                    className="input-swiss sm:col-span-6"
+                  />
+                  <input
+                    value={cert.description || ''}
+                    onChange={(e) => updateCertRow(cert.id, 'description', e.target.value)}
+                    placeholder="Deskripsi ringkas / kompetensi yang diujikan"
+                    className="input-swiss sm:col-span-12"
+                  />
+                </div>
+              ));
+            })()}
           </div>
 
           {/* KARTU 2: PELATIHAN, WORKSHOP & BOOTCAMP */}
@@ -1707,66 +1751,91 @@ export const AdminDashboardPage: React.FC = () => {
               </button>
             </div>
 
-            {certForm.filter(c => c.type === 'pelatihan').length === 0 ? (
-              <p className="label-mono text-xs text-ink-2 py-2">Belum ada pelatihan ditambahkan.</p>
-            ) : (
-              certForm
-                .filter(c => c.type === 'pelatihan')
-                .map((pelatihan) => (
-                  <div key={pelatihan.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
-                    <input
-                      value={pelatihan.name}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'name', e.target.value)}
-                      placeholder="Nama Program Pelatihan / Workshop"
-                      className="input-swiss sm:col-span-5"
-                    />
-                    <input
-                      value={pelatihan.issuer}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'issuer', e.target.value)}
-                      placeholder="Penyelenggara / Platform"
-                      className="input-swiss sm:col-span-3"
-                    />
-                    <input
-                      value={pelatihan.year}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'year', e.target.value)}
-                      placeholder="Tahun"
-                      className="input-swiss sm:col-span-2"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeCertRow(pelatihan.id)}
-                      className="sm:col-span-2 btn-primary text-xs py-1 px-2"
-                      style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--rule)' }}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> Hapus
-                    </button>
-                    <input
-                      value={pelatihan.period || ''}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'period', e.target.value)}
-                      placeholder="Periode Pelaksanaan (mis: Mei 2024 atau Agu 2024 - Nov 2024)"
-                      className="input-swiss sm:col-span-4"
-                    />
-                    <input
-                      value={pelatihan.duration || ''}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'duration', e.target.value)}
-                      placeholder="Durasi Total (mis: 3 Bulan / 48 Jam)"
-                      className="input-swiss sm:col-span-4"
-                    />
-                    <input
-                      value={pelatihan.url || ''}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'url', e.target.value)}
-                      placeholder="Link Portofolio Proyek / Bukti Kelulusan (URL)"
-                      className="input-swiss sm:col-span-4"
-                    />
-                    <input
-                      value={pelatihan.description || ''}
-                      onChange={(e) => updateCertRow(pelatihan.id, 'description', e.target.value)}
-                      placeholder="Materi utama yang dipelajari selama pelatihan"
-                      className="input-swiss sm:col-span-12"
-                    />
+            {(() => {
+              const pelatihanList = certForm.filter(c => c.type === 'pelatihan');
+              if (pelatihanList.length === 0) {
+                return <p className="label-mono text-xs text-ink-2 py-2">Belum ada pelatihan ditambahkan.</p>;
+              }
+              return pelatihanList.map((pelatihan, idx) => (
+                <div key={pelatihan.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border border-rule" style={{ backgroundColor: 'var(--paper-2)' }}>
+                  <div className="sm:col-span-12 flex items-center justify-between pb-1.5 mb-1 border-b border-rule">
+                    <span className="label-mono text-xs font-bold text-ink">
+                      Pelatihan #{idx + 1}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={idx === 0}
+                        onClick={() => moveCertRow(pelatihan.id, 'pelatihan', 'up')}
+                        title="Geser ke atas"
+                        className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={idx === pelatihanList.length - 1}
+                        onClick={() => moveCertRow(pelatihan.id, 'pelatihan', 'down')}
+                        title="Geser ke bawah"
+                        className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeCertRow(pelatihan.id)}
+                        title="Hapus pelatihan"
+                        className="p-1 border border-rule text-ink hover:bg-paper ml-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                ))
-            )}
+                  <input
+                    value={pelatihan.name}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'name', e.target.value)}
+                    placeholder="Nama Program Pelatihan / Workshop"
+                    className="input-swiss sm:col-span-6"
+                  />
+                  <input
+                    value={pelatihan.issuer}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'issuer', e.target.value)}
+                    placeholder="Penyelenggara / Platform"
+                    className="input-swiss sm:col-span-4"
+                  />
+                  <input
+                    value={pelatihan.year}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'year', e.target.value)}
+                    placeholder="Tahun"
+                    className="input-swiss sm:col-span-2"
+                  />
+                  <input
+                    value={pelatihan.period || ''}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'period', e.target.value)}
+                    placeholder="Periode Pelaksanaan (mis: Mei 2024 atau Agu 2024 - Nov 2024)"
+                    className="input-swiss sm:col-span-4"
+                  />
+                  <input
+                    value={pelatihan.duration || ''}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'duration', e.target.value)}
+                    placeholder="Durasi Total (mis: 3 Bulan / 48 Jam)"
+                    className="input-swiss sm:col-span-4"
+                  />
+                  <input
+                    value={pelatihan.url || ''}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'url', e.target.value)}
+                    placeholder="Link Portofolio Proyek / Bukti Kelulusan (URL)"
+                    className="input-swiss sm:col-span-4"
+                  />
+                  <input
+                    value={pelatihan.description || ''}
+                    onChange={(e) => updateCertRow(pelatihan.id, 'description', e.target.value)}
+                    placeholder="Materi utama yang dipelajari selama pelatihan"
+                    className="input-swiss sm:col-span-12"
+                  />
+                </div>
+              ));
+            })()}
           </div>
 
           {profileStatus && (

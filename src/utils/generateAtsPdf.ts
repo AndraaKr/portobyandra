@@ -574,7 +574,11 @@ export const generateAtsCvPdf = (
   // • Nama/Penerbit - Bidang/Materi (Kiri, Bold/Normal)      Tahun (Kanan, Bold)
   //   Kompetensi Utama: Deskripsi (Kiri, Normal)
   // =========================================================================
-  const allCerts = safeProfile.certificates || [];
+  const rawCerts = safeProfile.certificates || [];
+  const allCerts = [
+    ...rawCerts.filter(c => c.type !== 'pelatihan'),
+    ...rawCerts.filter(c => c.type === 'pelatihan'),
+  ];
 
   if (allCerts.length > 0) {
     drawSectionHeader(isId ? 'SERTIFIKASI DAN PELATIHAN' : 'CERTIFICATIONS & TRAINING');
@@ -595,6 +599,14 @@ export const generateAtsCvPdf = (
       // Pisahkan judul dan penerbit bila ada tanda hubung atau gabungkan
       const titleBold = item.issuer ? `${item.issuer} - ` : '';
       const titleNormal = item.name || '';
+      const typeLabel =
+        item.type === 'pelatihan'
+          ? isId
+            ? ' (Pelatihan)'
+            : ' (Training)'
+          : isId
+          ? ' (Sertifikat)'
+          : ' (Certificate)';
 
       doc.setFont('times', 'bold');
       doc.setTextColor(20, 20, 20);
@@ -605,6 +617,12 @@ export const generateAtsCvPdf = (
       doc.setTextColor(20, 20, 20);
       doc.text(titleNormal, marginX + textIndent + boldW, currentY);
       const normalW = doc.getTextWidth(titleNormal);
+
+      // Label jenis (Sertifikat / Pelatihan) di samping judul
+      doc.setFont('times', 'italic');
+      doc.setTextColor(80, 80, 80);
+      doc.text(typeLabel, marginX + textIndent + boldW + normalW, currentY);
+      doc.setTextColor(20, 20, 20);
 
       // Jika sertifikat memiliki link (url), berikan garis bawah & buat bisa diklik (tanpa warna biru)
       if (item.url && item.url.trim()) {
