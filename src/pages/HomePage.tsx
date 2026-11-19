@@ -156,7 +156,7 @@ export const HomePage: React.FC = () => {
             role="button"
             title="Klik untuk memutar ulang animasi nama"
             aria-label="Muhammad Andra Kusuma Ramadhan — Andra Kusuma"
-            className="text-ink tracking-tight font-serif cursor-pointer focus:outline-none"
+            className="text-ink tracking-tight font-serif font-semibold cursor-pointer focus:outline-none"
             style={{
               fontSize: 'var(--step-display-xl)',
               lineHeight: 0.88,
@@ -274,7 +274,7 @@ export const HomePage: React.FC = () => {
               return (
                 <article
                   key={exp.id}
-                  className="grid grid-cols-1 md:grid-cols-12 group accent-row transition-colors duration-150 hover:bg-paper-2"
+                  className="grid grid-cols-1 md:grid-cols-12"
                 >
                   {/* Kolom Kiri (Desktop): Perusahaan, Lokasi di bawahnya, & Periode */}
                   <div className="hidden md:flex md:col-span-4 py-6 pr-8 flex-col justify-between gap-3 min-w-0">
@@ -374,7 +374,7 @@ export const HomePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setSelectedExperience(exp)}
-                        className="label-mono text-xs text-ink font-semibold hover:underline cursor-pointer inline-flex items-center gap-1.5 min-h-[44px] bg-transparent border-none p-0 accent-row-target shrink-0"
+                        className="label-mono text-xs text-ink font-semibold hover:underline cursor-pointer inline-flex items-center gap-1.5 min-h-[44px] bg-transparent border-none p-0 accent-link shrink-0"
                       >
                         <span>Lihat detail</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -402,7 +402,7 @@ export const HomePage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('portofolio')}
-            className="inline-flex items-center gap-1.5 label-mono text-xs text-ink hover:underline cursor-pointer bg-transparent border-none p-0 min-h-[44px] accent-link"
+            className="inline-flex md:hidden items-center gap-1.5 label-mono text-xs text-ink hover:underline cursor-pointer bg-transparent border-none p-0 min-h-[44px] accent-link"
           >
             <span>Selengkapnya</span>
             <ArrowRight className="w-4 h-4" />
@@ -412,6 +412,7 @@ export const HomePage: React.FC = () => {
         <HomeWorkGrid
           works={selectedWorks}
           openWork={openWork}
+          onSeeAll={() => setActiveTab('portofolio')}
         />
       </section>
 

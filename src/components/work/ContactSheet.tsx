@@ -58,20 +58,19 @@ export const ContactSheet: React.FC<ContactSheetProps> = ({
   }
 
   // Tampilan halaman Karya (#portofolio):
-  // Rasio seragam 3:4 di semua tampilan: 2 kolom di mobile, 3 kolom (col-span-4) di desktop
+  // Rasio seragam 3:4 di semua tampilan: 2 kolom di mobile, 4 di tablet, dan 5 kolom sejajar (jejer 5) di desktop
   return (
     <div className="w-full">
-      <div className="grid grid-cols-2 md:grid-cols-12 gap-x-3.5 sm:gap-x-6 md:gap-x-8 gap-y-8 md:gap-y-12">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-x-3.5 sm:gap-x-4 lg:gap-x-5 gap-y-8 md:gap-y-10">
         {works.map((work, idx) => (
-          <div key={work.id} className="col-span-1 md:col-span-4">
-            <SheetItem
-              work={work}
-              index={idx}
-              openWork={openWork}
-              priority={idx < 4}
-              layout="grid"
-            />
-          </div>
+          <SheetItem
+            key={work.id}
+            work={work}
+            index={idx}
+            openWork={openWork}
+            priority={idx < 5}
+            layout="grid"
+          />
         ))}
       </div>
     </div>
