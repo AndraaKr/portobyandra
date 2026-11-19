@@ -25,6 +25,7 @@ import {
   EyeOff,
   TrendingUp,
   GraduationCap,
+  Award,
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
@@ -39,7 +40,7 @@ import { downloadAtsCvPdf } from '../utils/generateAtsPdf';
 import { AtsCvModal } from '../components/AtsCvModal';
 import { normalizeWork, PUBLIC_CATEGORIES } from '../utils/work';
 
-type AdminTab = 'portfolio' | 'marketing' | 'experience' | 'messages' | 'backup' | 'account' | 'profile';
+type AdminTab = 'portfolio' | 'marketing' | 'experience' | 'certificates' | 'messages' | 'backup' | 'account' | 'profile';
 
 export const AdminDashboardPage: React.FC = () => {
   const { 
@@ -122,6 +123,8 @@ export const AdminDashboardPage: React.FC = () => {
   const [skillCategoryForm, setSkillCategoryForm] = useState<{ id: string; name: string; rawSkills: string }[]>([]);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileStatus, setProfileStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [isSavingCerts, setIsSavingCerts] = useState(false);
+  const [certStatus, setCertStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
   useEffect(() => {
     if (!siteProfile) return;
@@ -367,6 +370,32 @@ export const AdminDashboardPage: React.FC = () => {
       setProfileStatus({ type: 'success', msg: 'BERHASIL: Profil situs berhasil disimpan.' });
     } else {
       setProfileStatus({ type: 'error', msg: `GALAT: ${result.error || 'Gagal menyimpan profil.'}` });
+    }
+  };
+
+  const handleCertificatesSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCertStatus(null);
+    setIsSavingCerts(true);
+    const cleaned = certForm
+      .filter(c => c.name.trim())
+      .map(c => ({
+        ...c,
+        name: c.name.trim(),
+        issuer: c.issuer.trim(),
+        year: c.year.trim(),
+        period: c.period?.trim() || undefined,
+        duration: c.duration?.trim() || undefined,
+        validity: c.validity?.trim() || undefined,
+        url: c.url?.trim() || undefined,
+        description: c.description?.trim() || undefined,
+      }));
+    const result = await updateSiteProfile({ certificates: cleaned });
+    setIsSavingCerts(false);
+    if (result.success) {
+      setCertStatus({ type: 'success', msg: 'BERHASIL: Sertifikat & pelatihan berhasil disimpan.' });
+    } else {
+      setCertStatus({ type: 'error', msg: `GALAT: ${result.error || 'Gagal menyimpan data sertifikat & pelatihan.'}` });
     }
   };
 
@@ -659,6 +688,7 @@ export const AdminDashboardPage: React.FC = () => {
           { id: 'portfolio', label: `Kelola Portofolio (${portfolioItems.length})`, icon: Layers },
           { id: 'marketing', label: `Kelola Marketing (${marketingResults.length})`, icon: TrendingUp },
           { id: 'experience', label: `Kelola Pengalaman (${experiences.length})`, icon: Briefcase },
+          { id: 'certificates', label: `Sertifikat & Pelatihan (${certForm.length})`, icon: Award },
           { id: 'messages', label: `Pesan Masuk (${messages.length})`, icon: Mail },
           { id: 'backup', label: 'Cadangan & Ekspor', icon: Database },
           { id: 'profile', label: 'Profil Situs', icon: UserCog },
@@ -1638,6 +1668,27 @@ export const AdminDashboardPage: React.FC = () => {
             )}
           </div>
 
+          {profileStatus && (
+            <div className="border-l-2 border-ink pl-3 py-1 label-mono text-xs text-ink">
+              {profileStatus.msg}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSavingProfile}
+            className="btn-primary"
+          >
+            {isSavingProfile ? 'MENYIMPAN…' : 'SIMPAN PROFIL'}
+          </button>
+        </form>
+      )}
+
+      {/* ========================================================
+          TAB SERTIFIKAT & PELATIHAN (Terpisah dari Profil Situs)
+          ======================================================== */}
+      {currentAdminTab === 'certificates' && (
+        <form onSubmit={handleCertificatesSave} className="space-y-6 max-w-4xl">
           {/* KARTU 1: SERTIFIKASI PROFESIONAL RESMI */}
           <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
             <div className="flex items-center justify-between border-b border-rule pb-2">
@@ -1838,18 +1889,18 @@ export const AdminDashboardPage: React.FC = () => {
             })()}
           </div>
 
-          {profileStatus && (
+          {certStatus && (
             <div className="border-l-2 border-ink pl-3 py-1 label-mono text-xs text-ink">
-              {profileStatus.msg}
+              {certStatus.msg}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={isSavingProfile}
+            disabled={isSavingCerts}
             className="btn-primary"
           >
-            {isSavingProfile ? 'MENYIMPAN…' : 'SIMPAN PROFIL'}
+            {isSavingCerts ? 'MENYIMPAN…' : 'SIMPAN SERTIFIKAT & PELATIHAN'}
           </button>
         </form>
       )}

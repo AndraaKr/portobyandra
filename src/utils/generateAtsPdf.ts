@@ -588,17 +588,16 @@ export const generateAtsCvPdf = (
     const lineHeight = 4.1;
 
     allCerts.forEach(item => {
-      checkPageBreak(item.description ? 10 : 6);
+      checkPageBreak(item.description ? 12 : 8);
 
-      // Baris 1: Bullet + Judul / Lembaga (Kiri) & Tahun (Kanan)
+      // Baris 1: Bullet + Judul (Bold + Link Underline bila ada URL) - Penyelenggara (Normal) (Sertifikat/Pelatihan) & Tanggal (Kanan)
       doc.setFont('times', 'normal');
       doc.setFontSize(9.5);
       doc.setTextColor(20, 20, 20);
       doc.text('•', marginX + bulletIndent, currentY);
 
-      // Pisahkan judul dan penerbit bila ada tanda hubung atau gabungkan
-      const titleBold = item.issuer ? `${item.issuer} - ` : '';
-      const titleNormal = item.name || '';
+      const titleText = (item.name || '').trim();
+      const issuerPart = item.issuer && item.issuer.trim() ? ` - ${item.issuer.trim()}` : '';
       const typeLabel =
         item.type === 'pelatihan'
           ? isId
@@ -608,38 +607,106 @@ export const generateAtsCvPdf = (
           ? ' (Sertifikat)'
           : ' (Certificate)';
 
-      doc.setFont('times', 'bold');
-      doc.setTextColor(20, 20, 20);
-      doc.text(titleBold, marginX + textIndent, currentY);
-      const boldW = doc.getTextWidth(titleBold);
-
-      doc.setFont('times', 'normal');
-      doc.setTextColor(20, 20, 20);
-      doc.text(titleNormal, marginX + textIndent + boldW, currentY);
-      const normalW = doc.getTextWidth(titleNormal);
-
-      // Label jenis (Sertifikat / Pelatihan) di samping judul
-      doc.setFont('times', 'italic');
-      doc.setTextColor(80, 80, 80);
-      doc.text(typeLabel, marginX + textIndent + boldW + normalW, currentY);
-      doc.setTextColor(20, 20, 20);
-
-      // Jika sertifikat memiliki link (url), berikan garis bawah & buat bisa diklik (tanpa warna biru)
-      if (item.url && item.url.trim()) {
-        const certTarget = item.url.trim().startsWith('http') ? item.url.trim() : `https://${item.url.trim()}`;
-        const totalW = boldW + normalW;
-        doc.setDrawColor(20, 20, 20);
-        doc.setLineWidth(0.2);
-        doc.line(marginX + textIndent, currentY + 0.4, marginX + textIndent + totalW, currentY + 0.4);
-        doc.link(marginX + textIndent, currentY - 3.2, totalW, 4.0, { url: certTarget });
-      }
-
-      // Periode tanggal di kanan: jika ada field period (mis: Agu 2024 - Nov 2024) gunakan itu, jika tidak ada gunakan year
-      const dateText = item.period || item.year;
+      // Periode tanggal di kanan
+      const dateText = (item.period || item.year || '').trim();
+      let dateW = 0;
       if (dateText) {
         doc.setFont('times', 'bold');
+        dateW = doc.getTextWidth(dateText) + 5;
         doc.text(dateText, marginX + contentWidth, currentY, { align: 'right' });
       }
+
+      const maxHeaderW = contentWidth - textIndent - dateW;
+      const startX = marginX + textIndent;
+
+      // Render Judul terlebih dahulu (BOLD, garis bawah & link HANYA pada judul)
+      doc.setFont('times', 'bold');
+      doc.setTextColor(20, 20, 20);
+      const titleW = doc.getTextWidth(titleText);
+
+      // Hitung lebar Penyelenggara & Label jenis
+      doc.setFont('times', 'normal');
+      const issuerW = doc.getTextWidth(issuerPart);
+      doc.setFont('times', 'italic');
+      const typeW = doc.getTextWidth(typeLabel);
+
+      const certTarget =
+        item.url && item.url.trim()
+          ? item.url.trim().startsWith('http')
+            ? item.url.trim()
+            : `https://${item.url.trim()}`
+          : '';
+
+      if (titleW <= maxHeaderW) {
+        doc.setFont('times', 'bold');
+        doc.setTextColor(20, 20, 20);
+        doc.text(titleText, startX, currentY);
+
+        if (certTarget && titleW > 0) {
+          doc.setDrawColor(20, 20, 20);
+          doc.setLineWidth(0.2);
+          doc.line(startX, currentY + 0.4, startX + titleW, currentY + 0.4);
+          doc.link(startX, currentY - 3.2, titleW, 4.0, { url: certTarget });
+        }
+
+        if (titleW + issuerW + typeW <= maxHeaderW) {
+          // Muat dalam 1 baris
+          if (issuerPart) {
+            doc.setFont('times', 'normal');
+            doc.setTextColor(20, 20, 20);
+            doc.text(issuerPart, startX + titleW, currentY);
+          }
+          doc.setFont('times', 'italic');
+          doc.setTextColor(80, 80, 80);
+          doc.text(typeLabel, startX + titleW + issuerW, currentY);
+          doc.setTextColor(20, 20, 20);
+        } else {
+          // Judul panjang: turunkan Penyelenggara + Label ke baris berikutnya agar tidak bertabrakan dengan tanggal
+          currentY += lineHeight;
+          const cleanIssuer = item.issuer && item.issuer.trim() ? item.issuer.trim() : '';
+          let nextX = startX;
+          if (cleanIssuer) {
+            doc.setFont('times', 'normal');
+            doc.setTextColor(20, 20, 20);
+            doc.text(cleanIssuer, nextX, currentY);
+            nextX += doc.getTextWidth(cleanIssuer);
+          }
+          doc.setFont('times', 'italic');
+          doc.setTextColor(80, 80, 80);
+          doc.text(cleanIssuer ? typeLabel : typeLabel.trimStart(), nextX, currentY);
+          doc.setTextColor(20, 20, 20);
+        }
+      } else {
+        // Jika judul sendiri melebihi lebar baris pertama, bungkus judul dengan link pada tiap baris judul
+        doc.setFont('times', 'bold');
+        doc.setTextColor(20, 20, 20);
+        const wrappedTitle: string[] = doc.splitTextToSize(titleText, maxHeaderW);
+        wrappedTitle.forEach((tLine, tIdx) => {
+          if (tIdx > 0) currentY += lineHeight;
+          doc.text(tLine, startX, currentY);
+          const lw = doc.getTextWidth(tLine);
+          if (certTarget && lw > 0) {
+            doc.setDrawColor(20, 20, 20);
+            doc.setLineWidth(0.2);
+            doc.line(startX, currentY + 0.4, startX + lw, currentY + 0.4);
+            doc.link(startX, currentY - 3.2, lw, 4.0, { url: certTarget });
+          }
+        });
+        currentY += lineHeight;
+        const cleanIssuer = item.issuer && item.issuer.trim() ? item.issuer.trim() : '';
+        let nextX = startX;
+        if (cleanIssuer) {
+          doc.setFont('times', 'normal');
+          doc.setTextColor(20, 20, 20);
+          doc.text(cleanIssuer, nextX, currentY);
+          nextX += doc.getTextWidth(cleanIssuer);
+        }
+        doc.setFont('times', 'italic');
+        doc.setTextColor(80, 80, 80);
+        doc.text(cleanIssuer ? typeLabel : typeLabel.trimStart(), nextX, currentY);
+        doc.setTextColor(20, 20, 20);
+      }
+
       currentY += lineHeight;
 
       // Baris 2: Sub-deskripsi (Kompetensi Utama / Materi)
