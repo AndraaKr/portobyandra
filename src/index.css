@@ -23,6 +23,9 @@
   --radius-*: initial;
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
+  --font-serif: var(--font-display);
+  --font-sans: "Inter Tight Variable", "Inter Tight", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", monospace;
   --shadow-*: initial;
   --blur-*: initial;
 }

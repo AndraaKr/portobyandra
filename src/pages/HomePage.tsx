@@ -52,6 +52,22 @@ export const HomePage: React.FC = () => {
     .sort((a, b) => (a.order || 0) - (b.order || 0))
     .slice(0, 3);
 
+  const getDescriptionPoints = (desc?: string): string[] => {
+    if (!desc) return [];
+    const byLine = desc
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const allPoints =
+      byLine.length > 1
+        ? byLine
+        : desc
+            .split(/(?<=[.!?])\s+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+    return allPoints.slice(0, 2);
+  };
+
   const tagline = siteProfile?.tagline?.trim();
 
   const scrollToKarya = () => {
@@ -231,7 +247,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ========================================================
-          02 PENGALAMAN (Deskriptif dengan Tombol Lihat Detail -> Pop-up)
+          02 PENGALAMAN (Garis Waktu Vertikal Editorial Swiss — Ramah HRD, Tanpa Nomor)
           ======================================================== */}
       <section id="section-pengalaman" className="border-t border-rule pt-8 sm:pt-10 mb-16 md:mb-24">
         <div className="flex items-baseline justify-between mb-6">
@@ -239,63 +255,135 @@ export const HomePage: React.FC = () => {
             <span className="label-mono text-xs text-vermilion font-bold">02</span>
             <h2 className="font-serif text-2xl sm:text-3xl text-ink">Pengalaman</h2>
           </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('pengalaman')}
+            className="inline-flex items-center gap-1.5 label-mono text-xs text-ink hover:underline cursor-pointer bg-transparent border-none p-0 min-h-[44px] accent-link"
+          >
+            <span>Selengkapnya</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
 
         {recentExperiences.length > 0 ? (
-          <div className="divide-y divide-rule border-b border-rule">
-            {recentExperiences.map((exp) => (
-              <div key={exp.id} className="py-5 sm:py-6 space-y-3 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 min-w-0">
-                    <span className="font-serif text-lg sm:text-xl text-ink font-semibold break-words">
-                      {exp.role}
-                    </span>
-                    <span className="label-mono text-xs text-vermilion break-words">
-                      — {exp.organization}
-                    </span>
-                  </div>
-                  <span className="label-mono text-xs text-ink-2 font-medium shrink-0">
-                    {exp.period}
-                  </span>
-                </div>
+          <div className="border-t border-b border-rule divide-y divide-rule">
+            {recentExperiences.map((exp) => {
+              const isActiveExp = /sekarang|present|aktif|now/i.test(exp.period);
+              const points = getDescriptionPoints(exp.description);
 
-                {/* Deskripsi Singkat di Beranda (Dipersingkat, versi lengkap di modal) */}
-                {exp.description && (
-                  <p className="font-sans text-xs sm:text-sm text-ink-2 leading-relaxed max-w-2xl line-clamp-2 break-words">
-                    {exp.description.split(/(?<=[.!?])\s+/)[0]}
-                  </p>
-                )}
-
-                {/* Aksi & Tag Ringkas */}
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                  {exp.skills && exp.skills.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5 min-w-0">
-                      {exp.skills.slice(0, 3).map((s, idx) => (
-                        <span key={idx} className="label-mono text-xs text-ink-2 border border-rule px-2 py-0.5 max-w-full break-words">
-                          {s}
-                        </span>
-                      ))}
-                      {exp.skills.length > 3 && (
-                        <span className="label-mono text-xs text-ink-2 py-0.5">
-                          +{exp.skills.length - 3} lainnya
-                        </span>
+              return (
+                <article
+                  key={exp.id}
+                  className="grid grid-cols-1 md:grid-cols-12 group accent-row transition-colors duration-150 hover:bg-paper-2"
+                >
+                  {/* Kolom Kiri (Desktop): Perusahaan, Lokasi di bawahnya, & Periode */}
+                  <div className="hidden md:flex md:col-span-4 py-6 pr-8 flex-col justify-between gap-3 min-w-0">
+                    <div className="space-y-1 min-w-0">
+                      <p className="font-sans text-sm sm:text-base font-semibold text-ink break-words leading-snug">
+                        {exp.organization}
+                      </p>
+                      {exp.location && (
+                        <p className="label-mono text-xs text-ink-2 break-words">
+                          {exp.location}
+                        </p>
                       )}
                     </div>
-                  ) : (
-                    <div />
-                  )}
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedExperience(exp)}
-                    className="label-mono text-xs text-ink font-bold hover:underline cursor-pointer inline-flex items-center gap-1 min-h-[44px] accent-link"
-                  >
-                    <span>Lihat detail</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
+                    <span
+                      className={`label-mono text-xs font-semibold ${
+                        isActiveExp ? 'text-vermilion' : 'text-ink-2'
+                      }`}
+                    >
+                      {exp.period}
+                    </span>
+                  </div>
+
+                  {/* Kolom Kanan (+ Garis Sumbu Timeline Vertikal & Penanda Kotak) */}
+                  <div className="md:col-span-8 relative border-l border-rule pl-5 sm:pl-6 md:pl-8 py-5 sm:py-6 space-y-3 min-w-0">
+                    {/* Titik Sumbu Timeline Kotak Arsitektural */}
+                    <span
+                      className={`absolute -left-[5px] top-6 sm:top-7 w-2.5 h-2.5 block ${
+                        isActiveExp
+                          ? 'bg-vermilion'
+                          : 'bg-paper border border-ink'
+                      }`}
+                      aria-hidden="true"
+                    />
+
+                    {/* Meta Mobile (Hanya muncul di HP agar alur baca HRD tetap instan) */}
+                    <div className="md:hidden space-y-0.5 min-w-0">
+                      <span
+                        className={`label-mono text-xs font-semibold block ${
+                          isActiveExp ? 'text-vermilion' : 'text-ink-2'
+                        }`}
+                      >
+                        {exp.period}
+                      </span>
+                      <p className="font-sans text-xs font-semibold text-ink break-words">
+                        {exp.organization}
+                      </p>
+                      {exp.location && (
+                        <p className="label-mono text-xs text-ink-2 break-words">
+                          {exp.location}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Jabatan / Peran */}
+                    <h3 className="font-serif text-xl sm:text-2xl text-ink font-semibold leading-snug break-words">
+                      {exp.role}
+                    </h3>
+
+                    {/* Ringkasan Poin Kerja (Langsung terbaca tanpa perlu klik) */}
+                    {points.length > 0 && (
+                      <ul className="space-y-1.5 max-w-[64ch]">
+                        {points.map((pt, pIdx) => (
+                          <li
+                            key={pIdx}
+                            className="font-sans text-xs sm:text-sm text-ink-2 leading-relaxed flex items-start gap-2.5 min-w-0"
+                          >
+                            <span className="text-ink-3 select-none shrink-0">—</span>
+                            <span className="break-words">{pt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {/* Keahlian & Aksi Detail */}
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3">
+                      {exp.skills && exp.skills.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 min-w-0">
+                          {exp.skills.slice(0, 4).map((s, idx) => (
+                            <span
+                              key={idx}
+                              className="label-mono text-xs text-ink-2 border border-rule px-2 py-0.5 max-w-full break-words"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                          {exp.skills.length > 4 && (
+                            <span className="label-mono text-xs text-ink-2 py-0.5">
+                              +{exp.skills.length - 4}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div />
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedExperience(exp)}
+                        className="label-mono text-xs text-ink font-semibold hover:underline cursor-pointer inline-flex items-center gap-1.5 min-h-[44px] bg-transparent border-none p-0 accent-row-target shrink-0"
+                      >
+                        <span>Lihat detail</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : (
           <p className="label-mono text-xs text-ink-2 py-4">Belum ada data pengalaman.</p>
