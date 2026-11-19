@@ -100,44 +100,48 @@ export const AdminLoginPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block label-mono text-ink mb-1">
+            <label className="block label-mono text-ink mb-1.5">
               Email Pemilik *
             </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-ink-2 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative flex items-center border border-rule bg-paper focus-within:border-ink transition-colors">
+              <span className="pl-3 pr-2 text-ink-2 shrink-0 flex items-center justify-center">
+                <Mail className="w-4 h-4" />
+              </span>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="input-swiss pl-9"
+                className="w-full bg-transparent border-none py-2.5 pr-3 text-ink font-sans text-sm focus:outline-none placeholder:text-ink-2/60"
                 autoComplete="email"
               />
             </div>
           </div>
 
           <div>
-            <label className="block label-mono text-ink mb-1">
+            <label className="block label-mono text-ink mb-1.5">
               Kata Sandi *
             </label>
-            <div className="relative">
-              <Key className="w-4 h-4 text-ink-2 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="relative flex items-center border border-rule bg-paper focus-within:border-ink transition-colors">
+              <span className="pl-3 pr-2 text-ink-2 shrink-0 flex items-center justify-center">
+                <Key className="w-4 h-4" />
+              </span>
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Masukkan kata sandi…"
-                className="input-swiss pl-9 pr-10"
+                className="w-full bg-transparent border-none py-2.5 pr-10 text-ink font-sans text-sm focus:outline-none placeholder:text-ink-2/60"
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink cursor-pointer bg-transparent border-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink cursor-pointer bg-transparent border-none p-1 flex items-center justify-center"
                 aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
