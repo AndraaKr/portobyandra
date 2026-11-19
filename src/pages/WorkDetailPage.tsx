@@ -148,8 +148,8 @@ export const WorkDetailPage: React.FC = () => {
       {isPortrait ? (
         // Tata Letak Video Vertikal 9:16: Dibatasi proporsional agar ringkas, seimbang, dan tidak menutupi teks
         <div className="grid grid-cols-1 md:grid-cols-12 gap-y-8 md:gap-x-10 mb-16 items-start">
-          <div className="md:col-span-5 flex flex-col items-center md:items-start">
-            <div className="w-full max-w-[280px] sm:max-w-[300px] md:max-w-[320px] max-h-[52vh] md:max-h-[500px] overflow-hidden bg-paper-2 border border-rule flex items-center justify-center">
+          <div className="md:col-span-5 flex flex-col items-center md:items-start w-full">
+            <div className="w-full max-w-[320px] sm:max-w-[340px] md:max-w-[360px] overflow-hidden bg-paper-2 border border-rule flex items-center justify-center mx-auto">
               <MediaFrame work={work} variant="detail" priority />
             </div>
             {work.mediaType === 'image' && work.posterUrl && (

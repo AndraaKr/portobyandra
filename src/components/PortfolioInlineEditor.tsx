@@ -11,6 +11,7 @@ import {
 import { PortfolioItem, Category, MediaType, WorkRole } from '../types';
 import { usePortfolio } from '../context/PortfolioContext';
 import { processLocalImage } from '../utils/imageUpload';
+import { uploadLocalVideo } from '../utils/videoUpload';
 
 interface PortfolioInlineEditorProps {
   item: PortfolioItem;
@@ -94,6 +95,11 @@ export const PortfolioInlineEditor: React.FC<PortfolioInlineEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
+  // File Upload Video Langsung (.mp4 / .webm)
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<number>(0);
+
   const handleRatioPresetChange = (idx: number) => {
     setSelectedRatioIndex(idx);
     const preset = RATIO_PRESETS[idx];
@@ -116,6 +122,25 @@ export const PortfolioInlineEditor: React.FC<PortfolioInlineEditorProps> = ({
     } finally {
       setIsProcessingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleVideoFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingVideo(true);
+      setVideoUploadProgress(10);
+      const res = await uploadLocalVideo(file, (p) => setVideoUploadProgress(p));
+      setVideoUrl(res.publicUrl);
+      showToast(`Video berhasil diunggah (${res.sizeMb} MB)`, 'success');
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengunggah berkas video');
+    } finally {
+      setIsUploadingVideo(false);
+      setVideoUploadProgress(0);
+      if (videoFileInputRef.current) videoFileInputRef.current.value = '';
     }
   };
 
@@ -424,17 +449,45 @@ export const PortfolioInlineEditor: React.FC<PortfolioInlineEditorProps> = ({
 
         {/* Video URL */}
         {mediaType === 'video' && (
-          <div>
-            <label className="block label-mono text-ink mb-1">
-              URL Video (MP4 / WebM / Supabase Storage) *
-            </label>
+          <div className="border border-rule p-3" style={{ backgroundColor: 'var(--paper-2)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <label className="block label-mono text-ink">
+                URL Video / Sumber Video *
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  ref={videoFileInputRef}
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={handleVideoFileSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => videoFileInputRef.current?.click()}
+                  disabled={isUploadingVideo}
+                  className="btn-swiss-secondary text-xs flex items-center gap-1.5"
+                  style={{ padding: '4px 10px' }}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>
+                    {isUploadingVideo
+                      ? `MENGUNGGAH... ${videoUploadProgress}%`
+                      : 'UNGGAH BERKAS VIDEO'}
+                  </span>
+                </button>
+              </div>
+            </div>
             <input
               type="text"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
-              placeholder="https://.../video.mp4"
+              placeholder="https://youtu.be/... atau https://drive.google.com/file/d/... atau https://.../video.mp4"
               className="input-swiss"
             />
+            <span className="label-mono text-xs text-ink-2 mt-2 block">
+              Mendukung: YouTube, Google Drive, Vimeo, atau berkas MP4/WebM langsung (maks 50MB).
+            </span>
           </div>
         )}
 
