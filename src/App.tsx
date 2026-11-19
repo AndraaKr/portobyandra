@@ -66,21 +66,9 @@ const AppContent: React.FC = () => {
         return;
       }
 
-      // Cek rute admin (mendukung /gwadmin atau #gwadmin)
-      const isAdminHash =
-        rawHash === 'gwadmin' ||
-        rawHash === 'admin' ||
-        rawHash === 'porto/admin' ||
-        rawHash === 'admin-login' ||
-        rawHash === 'admin-dashboard';
-
-      const isAdminPath =
-        pathname === '/gwadmin' ||
-        pathname.endsWith('/gwadmin') ||
-        pathname === '/admin' ||
-        pathname.endsWith('/admin') ||
-        pathname === '/porto/admin' ||
-        pathname.endsWith('/porto/admin');
+      // Cek rute admin (HANYA rahasia /gwadmin atau #gwadmin)
+      const isAdminHash = rawHash === 'gwadmin';
+      const isAdminPath = pathname === '/gwadmin' || pathname.endsWith('/gwadmin');
 
       if (isAdminHash || isAdminPath) {
         if (isAuthLoading) return;

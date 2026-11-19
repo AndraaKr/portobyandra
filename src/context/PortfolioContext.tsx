@@ -318,18 +318,11 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (rawHash.startsWith('portofolio/')) return 'portofolio-detail';
 
+    // Rute admin rahasia: HANYA /gwadmin atau #gwadmin
     const isAdminRoute =
       pathname === '/gwadmin' ||
       pathname.endsWith('/gwadmin') ||
-      pathname === '/porto/admin' ||
-      pathname.endsWith('/porto/admin') ||
-      pathname === '/admin' ||
-      pathname.endsWith('/admin') ||
-      rawHash === 'gwadmin' ||
-      rawHash === 'porto/admin' ||
-      rawHash === 'admin' ||
-      rawHash === 'admin-login' ||
-      rawHash === 'admin-dashboard';
+      rawHash === 'gwadmin';
     // Status login belum diketahui di titik ini (Supabase masih memeriksa sesi),
     // jadi mulai dari 'admin-login' sebagai tebakan aman — App.tsx akan mengoreksi
     // ke 'admin-dashboard' begitu sesi selesai diperiksa, kalau ternyata sudah login.
