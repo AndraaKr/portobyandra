@@ -60,19 +60,11 @@ export const MediaFrame: React.FC<MediaFrameProps> = ({
 
       // 1A. Embed YouTube, Vimeo, atau Google Drive
       if (parsedVideo.type === 'youtube' || parsedVideo.type === 'vimeo' || parsedVideo.type === 'gdrive') {
-        // Khusus Google Drive: pratinjau Drive memiliki bilah toolbar header ~56px di bagian atas.
-        // Jika rasio dipatok 16:9 murni pada layar mobile, video terdesak ke bawah sehingga bagian bawahnya terpotong.
-        // Memberi rasio 16/11 pada video landscape Google Drive memberi ruang bagi toolbar tersebut sehingga video tidak terpotong sama sekali.
-        const effectiveAspectRatio =
-          parsedVideo.type === 'gdrive' && !isPortrait
-            ? '16 / 11'
-            : `${mediaWidth} / ${mediaHeight}`;
-
         return (
           <div
             className="w-full relative overflow-hidden bg-black mx-auto"
             style={{
-              aspectRatio: effectiveAspectRatio,
+              aspectRatio: `${mediaWidth} / ${mediaHeight}`,
             }}
           >
             <iframe
