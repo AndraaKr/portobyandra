@@ -319,10 +319,13 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (rawHash.startsWith('portofolio/')) return 'portofolio-detail';
 
     const isAdminRoute =
+      pathname === '/gwadmin' ||
+      pathname.endsWith('/gwadmin') ||
       pathname === '/porto/admin' ||
       pathname.endsWith('/porto/admin') ||
       pathname === '/admin' ||
       pathname.endsWith('/admin') ||
+      rawHash === 'gwadmin' ||
       rawHash === 'porto/admin' ||
       rawHash === 'admin' ||
       rawHash === 'admin-login' ||

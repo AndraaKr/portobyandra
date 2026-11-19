@@ -66,14 +66,17 @@ const AppContent: React.FC = () => {
         return;
       }
 
-      // Cek rute admin
+      // Cek rute admin (mendukung /gwadmin atau #gwadmin)
       const isAdminHash =
+        rawHash === 'gwadmin' ||
         rawHash === 'admin' ||
         rawHash === 'porto/admin' ||
         rawHash === 'admin-login' ||
         rawHash === 'admin-dashboard';
 
       const isAdminPath =
+        pathname === '/gwadmin' ||
+        pathname.endsWith('/gwadmin') ||
         pathname === '/admin' ||
         pathname.endsWith('/admin') ||
         pathname === '/porto/admin' ||
@@ -123,7 +126,7 @@ const AppContent: React.FC = () => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       if (activeTab === 'admin-login' || activeTab === 'admin-dashboard') {
-        window.history.replaceState(null, '', '/#admin');
+        window.history.replaceState(null, '', '/#gwadmin');
       } else if (activeTab === 'portofolio-detail') {
         window.history.replaceState(null, '', activeWorkSlug ? `/#portofolio/${activeWorkSlug}` : '/#portofolio');
       }
@@ -131,7 +134,7 @@ const AppContent: React.FC = () => {
     }
 
     if (activeTab === 'admin-login' || activeTab === 'admin-dashboard') {
-      window.history.replaceState(null, '', '/#admin');
+      window.history.replaceState(null, '', '/#gwadmin');
     } else if (activeTab === 'portofolio-detail') {
       window.history.replaceState(null, '', activeWorkSlug ? `/#portofolio/${activeWorkSlug}` : '/#portofolio');
     } else if (activeTab === 'beranda') {
