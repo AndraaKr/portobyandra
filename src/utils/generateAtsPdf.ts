@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { Experience, PortfolioItem, SiteProfile } from '../types';
+import { EducationItem, Experience, PortfolioItem, SiteProfile, SkillCategory } from '../types';
 
 export interface AtsCvOptions {
   language?: 'id' | 'en';
@@ -40,7 +40,11 @@ export interface ParsedEducation {
  * - "Universitas X | S1 Teknik Informatika | IPK: 3.85/4.00 | Agu 2021 - Nov 2025 | Surabaya"
  * - Baris baru (Enter) setelah baris pertama akan dianggap sebagai bullet poin aktivitas/pencapaian.
  */
-export const parseEducationText = (rawEducation: string, fallbackLocation = ''): ParsedEducation => {
+export const parseEducationText = (
+  rawEducation: string,
+  fallbackLocation = '',
+  overridePeriod = ''
+): ParsedEducation => {
   const lines = rawEducation
     .split(/\r?\n/)
     .map(l => l.trim())
@@ -51,7 +55,7 @@ export const parseEducationText = (rawEducation: string, fallbackLocation = ''):
       institution: '',
       degree: '',
       gpa: '',
-      period: '',
+      period: overridePeriod?.trim() || '2021 – 2025',
       location: fallbackLocation,
       bullets: [],
     };
@@ -63,26 +67,39 @@ export const parseEducationText = (rawEducation: string, fallbackLocation = ''):
   // Jika dipisahkan dengan pipa "|"
   if (firstLine.includes('|')) {
     const parts = firstLine.split('|').map(p => p.trim()).filter(Boolean);
+    const parsedPeriod = parts[3] || overridePeriod || '';
     return {
       institution: parts[0] || '',
       degree: parts[1] || '',
       gpa: parts[2] || '',
-      period: parts[3] || '',
+      period: parsedPeriod ? normalizePeriodString(parsedPeriod) : (overridePeriod?.trim() || '2021 – 2025'),
       location: parts[4] || fallbackLocation,
       bullets,
     };
   }
 
   let working = firstLine;
-  let period = '';
+  let period = overridePeriod?.trim() || '';
   let gpa = '';
 
-  // Ekstrak periode dalam kurung di akhir, mis: (2021 - 2025) atau (Agu 2021 - Nov 2025)
+  // 1. Ekstrak periode dalam kurung di akhir, mis: (2021 - 2025) atau (Agu 2021 - Nov 2025) atau (Lulus 2025)
   const periodMatch = working.match(/\(([^)]*\d{4}[^)]*)\)\s*$/);
   if (periodMatch) {
-    period = periodMatch[1].trim();
+    if (!period) period = periodMatch[1].trim();
     working = working.slice(0, periodMatch.index).trim();
   }
+
+  // 2. Ekstrak rentang tahun eksplisit di dalam teks, mis: 2021 - 2025 atau 2021–2025
+  if (!period) {
+    const rangeMatch = working.match(/\b((?:(?:Jan|Feb|Mar|Apr|Mei|May|Jun|Jul|Agu|Aug|Sep|Okt|Oct|Nov|Des|Dec)[a-z]*\s+)?(?:19|20)\d{2}\s*(?:—|–|-|s\/d|to)\s*(?:(?:Jan|Feb|Mar|Apr|Mei|May|Jun|Jul|Agu|Aug|Sep|Okt|Oct|Nov|Des|Dec)[a-z]*\s+)?(?:(?:19|20)\d{2}|Sekarang|Present))\b/i);
+    if (rangeMatch) {
+      period = rangeMatch[1].trim();
+      working = working.replace(rangeMatch[0], '').trim();
+    }
+  }
+
+  // 3. Normalisasi periode agar selalu format "dari tahun berapa sampai berapa" (misal: "2021 – 2025")
+  period = normalizePeriodString(period);
 
   // Ekstrak IPK / GPA jika ada di dalam teks
   const gpaMatch = working.match(/(?:IPK|GPA)\s*:?\s*([0-9.,]+(?:\/[0-9.,]+)?)/i);
@@ -90,6 +107,9 @@ export const parseEducationText = (rawEducation: string, fallbackLocation = ''):
     gpa = `IPK: ${gpaMatch[1]}`;
     working = working.replace(gpaMatch[0], '').replace(/[,;|\s]+$/, '').trim();
   }
+
+  // Bersihkan karakter pemisah di ujung string setelah pembersihan
+  working = working.replace(/[,;|\-—–\s]+$/, '').trim();
 
   // Pisahkan antara Gelar/Jurusan dan Nama Institusi jika ada tanda hubung " — " atau " - "
   const dashParts = working.split(/\s+(?:—|–|-)\s+/);
@@ -113,11 +133,40 @@ export const parseEducationText = (rawEducation: string, fallbackLocation = ''):
     institution,
     degree,
     gpa,
-    period,
+    period: period || '2021 – 2025',
     location: fallbackLocation,
     bullets,
   };
 };
+
+/**
+ * Normalisasi format rentang tahun agar menjadi "YYYY – YYYY" (misal "2021 – 2025")
+ */
+function normalizePeriodString(raw: string): string {
+  if (!raw || !raw.trim()) return '2021 – 2025';
+  const clean = raw.trim();
+
+  // Jika sudah berupa rentang tahun seperti "2021 - 2025" atau "2021–2025"
+  const rangeMatch = clean.match(/^(\d{4})\s*(?:—|–|-)\s*(\d{4}|Sekarang|Present)$/i);
+  if (rangeMatch) {
+    return `${rangeMatch[1]} – ${rangeMatch[2]}`;
+  }
+
+  // Jika berupa bulan & tahun seperti "Agu 2021 - Nov 2025"
+  if (/(?:—|–|-)/.test(clean)) {
+    return clean.replace(/\s*(?:—|–|-)\s*/g, ' – ');
+  }
+
+  // Jika berupa "Lulus 2025" atau angka tahun tunggal "2025", estimasikan rentang 4 tahun studi sarjana/diploma
+  const singleYearMatch = clean.match(/\b(20\d{2})\b/);
+  if (singleYearMatch) {
+    const endYear = parseInt(singleYearMatch[1], 10);
+    const startYear = endYear - 4;
+    return `${startYear} – ${endYear}`;
+  }
+
+  return clean;
+}
 
 export const generateAtsCvPdf = (
   profile: SiteProfile | null | undefined,
@@ -205,29 +254,43 @@ export const generateAtsCvPdf = (
   currentY += 6;
 
   // Baris Kontak & Tautan (Email | Nomor | LinkedIn | Link Porto) berada di tengah
-  // Menggunakan warna biru untuk link (email, linkedin, website/porto) dan warna hitam untuk nomor telepon
+  // Format bersih ATS: Tanpa warna biru (warna hitam/ink standar), tautan dapat diklik dan bergaris bawah
   interface ContactSegment {
     text: string;
     isLink: boolean;
+    targetUrl?: string;
   }
   const segments: ContactSegment[] = [];
   if (safeProfile.email) {
-    segments.push({ text: safeProfile.email.trim(), isLink: true });
+    segments.push({
+      text: safeProfile.email.trim(),
+      isLink: true,
+      targetUrl: `mailto:${safeProfile.email.trim()}`,
+    });
   }
   if (safeProfile.phone) {
-    segments.push({ text: safeProfile.phone.trim(), isLink: false });
+    segments.push({
+      text: safeProfile.phone.trim(),
+      isLink: false,
+    });
   }
   if (safeProfile.socials?.linkedin) {
+    const rawLinkedin = safeProfile.socials.linkedin.trim();
+    const linkedinTarget = rawLinkedin.startsWith('http') ? rawLinkedin : `https://${rawLinkedin}`;
     segments.push({
-      text: safeProfile.socials.linkedin.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, ''),
+      text: rawLinkedin.replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, ''),
       isLink: true,
+      targetUrl: linkedinTarget,
     });
   }
   const portfolioLink = safeProfile.socials?.website || safeProfile.socials?.github;
   if (portfolioLink) {
+    const rawPorto = portfolioLink.trim();
+    const portoTarget = rawPorto.startsWith('http') ? rawPorto : `https://${rawPorto}`;
     segments.push({
-      text: portfolioLink.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, ''),
+      text: rawPorto.replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, ''),
       isLink: true,
+      targetUrl: portoTarget,
     });
   }
 
@@ -243,13 +306,19 @@ export const generateAtsCvPdf = (
     if (totalWidth <= contentWidth) {
       let startX = centerX - totalWidth / 2;
       segments.forEach((seg, idx) => {
-        if (seg.isLink) {
-          doc.setTextColor(37, 99, 235); // Biru link seperti referensi
-        } else {
-          doc.setTextColor(20, 20, 20);
-        }
+        const segW = doc.getTextWidth(seg.text);
+        doc.setTextColor(20, 20, 20);
         doc.text(seg.text, startX, currentY);
-        startX += doc.getTextWidth(seg.text);
+
+        // Jika tautan (email, linkedin, porto), tambahkan garis bawah & clickable link (tanpa warna biru)
+        if (seg.isLink && seg.targetUrl) {
+          doc.setDrawColor(20, 20, 20);
+          doc.setLineWidth(0.2);
+          doc.line(startX, currentY + 0.4, startX + segW, currentY + 0.4);
+          doc.link(startX, currentY - 3.2, segW, 4.0, { url: seg.targetUrl });
+        }
+
+        startX += segW;
 
         if (idx < segments.length - 1) {
           doc.setTextColor(80, 80, 80);
@@ -259,12 +328,28 @@ export const generateAtsCvPdf = (
       });
       currentY += 4.5;
     } else {
-      // Fallback jika terlalu panjang: bungkus otomatis di tengah
-      doc.setTextColor(35, 35, 35);
-      const joined = segments.map(s => s.text).join('  |  ');
-      const wrapped = doc.splitTextToSize(joined, contentWidth);
-      doc.text(wrapped, centerX, currentY, { align: 'center' });
-      currentY += wrapped.length * 4.2;
+      // Fallback jika terlalu panjang: cetak per segmen dengan garis bawah
+      let lineX = marginX;
+      segments.forEach((seg, idx) => {
+        const segW = doc.getTextWidth(seg.text);
+        doc.setTextColor(20, 20, 20);
+        doc.text(seg.text, lineX, currentY);
+
+        if (seg.isLink && seg.targetUrl) {
+          doc.setDrawColor(20, 20, 20);
+          doc.setLineWidth(0.2);
+          doc.line(lineX, currentY + 0.4, lineX + segW, currentY + 0.4);
+          doc.link(lineX, currentY - 3.2, segW, 4.0, { url: seg.targetUrl });
+        }
+
+        lineX += segW;
+        if (idx < segments.length - 1) {
+          doc.setTextColor(80, 80, 80);
+          doc.text(separator, lineX, currentY);
+          lineX += sepWidth;
+        }
+      });
+      currentY += 4.5;
     }
   }
 
@@ -298,65 +383,74 @@ export const generateAtsCvPdf = (
   }
 
   // =========================================================================
-  // 3. PENDIDIKAN (Mengikuti urutan & tata letak referensi gambar)
+  // 3. PENDIDIKAN (Mendukung banyak riwayat pendidikan dari Admin)
   // =========================================================================
-  if (safeProfile.education) {
+  const eduList: EducationItem[] =
+    safeProfile.educations && safeProfile.educations.length > 0
+      ? safeProfile.educations
+      : safeProfile.education
+        ? [
+            {
+              id: 'edu-default',
+              institution: parseEducationText(safeProfile.education, safeProfile.location).institution || safeProfile.education,
+              degree: parseEducationText(safeProfile.education, safeProfile.location).degree || '',
+              period: safeProfile.educationPeriod || parseEducationText(safeProfile.education, safeProfile.location).period || '2021 – 2025',
+              location: safeProfile.location || 'Surabaya, Indonesia',
+              gpa: safeProfile.gpa || '3.79',
+              activities: '',
+            },
+          ]
+        : [];
+
+  if (eduList.length > 0) {
     drawSectionHeader(isId ? 'PENDIDIKAN' : 'EDUCATION');
-    const edu = parseEducationText(safeProfile.education, safeProfile.location);
-    // IPK bisa datang dari teks pendidikan ("IPK: 3.78") atau dari field profil terpisah
-    const profileGpa = (safeProfile.gpa || '').trim();
-    const gpaText =
-      edu.gpa ||
-      (profileGpa
-        ? /^(ipk|gpa)\b/i.test(profileGpa)
-          ? profileGpa
-          : `IPK: ${profileGpa}`
-        : 'IPK: 3.78');
 
-    checkPageBreak(12);
+    eduList.forEach((eduItem) => {
+      checkPageBreak(12);
 
-    // Baris 1: Nama Universitas/Institusi (Kiri, Bold) & Lokasi (Kanan, Bold)
-    doc.setFont('times', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(15, 15, 15);
-    doc.text(edu.institution || safeProfile.education, marginX, currentY);
+      const institutionText = eduItem.institution;
+      const locationText = eduItem.location || safeProfile.location || 'Surabaya, Indonesia';
+      const periodText = eduItem.period || '2021 – 2025';
+      const gpaText = eduItem.gpa
+        ? (/^(ipk|gpa)\b/i.test(eduItem.gpa) ? eduItem.gpa : `IPK: ${eduItem.gpa}`)
+        : '';
 
-    if (edu.location) {
-      doc.text(edu.location, marginX + contentWidth, currentY, { align: 'right' });
-    }
-    currentY += 4.2;
+      // Baris 1: Nama Universitas/Institusi (Kiri, Bold) & Lokasi (Kanan, Bold)
+      doc.setFont('times', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(15, 15, 15);
+      doc.text(institutionText, marginX, currentY);
 
-    // Baris 2: Gelar/Program Studi (Kiri, Italic) + IPK (Normal) & Periode (Kanan, Bold)
-    if (edu.degree || gpaText || edu.period) {
+      if (locationText) {
+        doc.text(locationText, marginX + contentWidth, currentY, { align: 'right' });
+      }
+      currentY += 4.2;
+
+      // Baris 2: Gelar/Program Studi (Kiri, Italic) + IPK (Normal) & Periode Tahun (Kanan, Bold - tepat di bawah Lokasi)
       let leftCursor = marginX;
-      if (edu.degree) {
+      if (eduItem.degree) {
         doc.setFont('times', 'italic');
         doc.setFontSize(9.5);
         doc.setTextColor(25, 25, 25);
-        doc.text(edu.degree, leftCursor, currentY);
-        leftCursor += doc.getTextWidth(edu.degree);
+        doc.text(eduItem.degree, leftCursor, currentY);
+        leftCursor += doc.getTextWidth(eduItem.degree);
       }
       if (gpaText) {
         doc.setFont('times', 'normal');
         doc.setFontSize(9.5);
         doc.setTextColor(25, 25, 25);
-        const gpaLabel = edu.degree ? `  |  ${gpaText}` : gpaText;
+        const gpaLabel = eduItem.degree ? `  |  ${gpaText}` : gpaText;
         doc.text(gpaLabel, leftCursor, currentY);
       }
-      if (edu.period) {
+      if (periodText) {
         doc.setFont('times', 'bold');
         doc.setFontSize(9.5);
         doc.setTextColor(15, 15, 15);
-        doc.text(edu.period, marginX + contentWidth, currentY, { align: 'right' });
+        doc.text(periodText, marginX + contentWidth, currentY, { align: 'right' });
       }
-      currentY += 4.4;
-    }
-
-    // Bullet aktivitas pendidikan jika ada
-    if (edu.bullets.length > 0) {
-      drawBulletList(edu.bullets);
-    }
-    currentY += 1;
+      currentY += 4.8;
+    });
+    currentY += 0.5;
   }
 
   // =========================================================================
@@ -503,11 +597,24 @@ export const generateAtsCvPdf = (
       const titleNormal = item.name || '';
 
       doc.setFont('times', 'bold');
+      doc.setTextColor(20, 20, 20);
       doc.text(titleBold, marginX + textIndent, currentY);
       const boldW = doc.getTextWidth(titleBold);
 
       doc.setFont('times', 'normal');
+      doc.setTextColor(20, 20, 20);
       doc.text(titleNormal, marginX + textIndent + boldW, currentY);
+      const normalW = doc.getTextWidth(titleNormal);
+
+      // Jika sertifikat memiliki link (url), berikan garis bawah & buat bisa diklik (tanpa warna biru)
+      if (item.url && item.url.trim()) {
+        const certTarget = item.url.trim().startsWith('http') ? item.url.trim() : `https://${item.url.trim()}`;
+        const totalW = boldW + normalW;
+        doc.setDrawColor(20, 20, 20);
+        doc.setLineWidth(0.2);
+        doc.line(marginX + textIndent, currentY + 0.4, marginX + textIndent + totalW, currentY + 0.4);
+        doc.link(marginX + textIndent, currentY - 3.2, totalW, 4.0, { url: certTarget });
+      }
 
       // Periode tanggal di kanan: jika ada field period (mis: Agu 2024 - Nov 2024) gunakan itu, jika tidak ada gunakan year
       const dateText = item.period || item.year;
@@ -547,25 +654,32 @@ export const generateAtsCvPdf = (
   };
 
   const skillsObj = safeProfile.skills ?? FALLBACK_PROFILE.skills;
-  const skillEntries = [
-    {
-      label: isId ? skillCategoryLabels.uiux.id : skillCategoryLabels.uiux.en,
-      items: skillsObj.uiux ?? [],
-    },
-    {
-      label: isId ? skillCategoryLabels.multimedia.id : skillCategoryLabels.multimedia.en,
-      items: skillsObj.multimedia ?? [],
-    },
-    {
-      label: isId ? skillCategoryLabels.marketing.id : skillCategoryLabels.marketing.en,
-      items: skillsObj.marketing ?? [],
-    },
-    {
-      label: isId ? skillCategoryLabels.aiTools.id : skillCategoryLabels.aiTools.en,
-      // Data lama mungkin belum punya aiTools. Ambil frontend hanya sebagai migrasi otomatis.
-      items: skillsObj.aiTools?.length ? skillsObj.aiTools : (skillsObj.frontend ?? []),
-    },
-  ].filter(group => group.items.length > 0);
+  const skillEntries =
+    safeProfile.skillCategories && safeProfile.skillCategories.length > 0
+      ? safeProfile.skillCategories
+          .filter(cat => cat.skills && cat.skills.length > 0)
+          .map(cat => ({
+            label: cat.name,
+            items: cat.skills,
+          }))
+      : [
+          {
+            label: isId ? skillCategoryLabels.uiux.id : skillCategoryLabels.uiux.en,
+            items: skillsObj.uiux ?? [],
+          },
+          {
+            label: isId ? skillCategoryLabels.multimedia.id : skillCategoryLabels.multimedia.en,
+            items: skillsObj.multimedia ?? [],
+          },
+          {
+            label: isId ? skillCategoryLabels.marketing.id : skillCategoryLabels.marketing.en,
+            items: skillsObj.marketing ?? [],
+          },
+          {
+            label: isId ? skillCategoryLabels.aiTools.id : skillCategoryLabels.aiTools.en,
+            items: skillsObj.aiTools?.length ? skillsObj.aiTools : (skillsObj.frontend ?? []),
+          },
+        ].filter(group => group.items.length > 0);
 
   if (skillEntries.length > 0) {
     drawSectionHeader(isId ? 'KEAHLIAN' : 'SKILLS');

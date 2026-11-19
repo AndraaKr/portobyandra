@@ -13,7 +13,7 @@ export const Footer: React.FC = () => {
     if (!siteProfile) return;
     downloadAtsCvPdf(siteProfile, experiences, portfolioItems, {
       language: 'id',
-      includeProjects: true,
+      includeProjects: false,
     });
   };
 

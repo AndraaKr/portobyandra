@@ -24,7 +24,7 @@ export const ExperiencePage: React.FC = () => {
     try {
       downloadAtsCvPdf(siteProfile, experiences, portfolioItems, {
         language: 'id',
-        includeProjects: true,
+        includeProjects: false,
       });
       showToast('CV (PDF) berhasil diunduh.', 'success');
     } catch {

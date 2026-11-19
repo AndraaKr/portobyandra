@@ -256,7 +256,19 @@ export const FIXTURE_SITE_PROFILE: SiteProfile = {
   email: 'andrakusuma.ramadhan@gmail.com',
   phone: '—',
   location: 'Surabaya, Indonesia',
-  education: 'D4 Teknik Informatika — Universitas Negeri Surabaya (Lulus 2025)',
+  education: 'D4 Teknik Informatika — Universitas Negeri Surabaya (2021 – 2025)',
+  educationPeriod: '2021 – 2025',
+  educations: [
+    {
+      id: 'edu-fix-1',
+      institution: 'Universitas Negeri Surabaya',
+      degree: 'D4 Teknik Informatika',
+      period: '2021 – 2025',
+      location: 'Surabaya, Indonesia',
+      gpa: '3.78',
+      activities: 'Fokus: Rekayasa Perangkat Lunak, Multimedia & Pengembangan Sistem Informasi',
+    },
+  ],
   gpa: '3.78',
   coursework: [
     'Produksi Media Audio-Visual',
@@ -279,6 +291,28 @@ export const FIXTURE_SITE_PROFILE: SiteProfile = {
     frontend: ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
     aiTools: ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
   },
+  skillCategories: [
+    {
+      id: 'cat-fix-1',
+      name: 'Video Editing & Multimedia',
+      skills: ['Premiere Pro', 'DaVinci Resolve', 'After Effects', 'CapCut Pro', 'Motion Design'],
+    },
+    {
+      id: 'cat-fix-2',
+      name: 'Digital Marketing & Konten AI',
+      skills: ['Digital Marketing', 'Meta Ads & Insights', 'SEO Konten', 'Analitik Media Sosial', 'Produksi Konten AI'],
+    },
+    {
+      id: 'cat-fix-3',
+      name: 'UI/UX & Product Design',
+      skills: ['Figma', 'Prototyping', 'Design System'],
+    },
+    {
+      id: 'cat-fix-4',
+      name: 'Tool AI & Generatif',
+      skills: ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
+    },
+  ],
   certificates: [
     {
       id: 'cert-1',

@@ -57,7 +57,18 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
       : ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'];
 
   const locationText = siteProfile?.location || 'Surabaya, ID';
-  const gpaText = siteProfile?.gpa?.trim() || '3.78';
+  // Hanya 1 pendidikan terakhir yang ditampilkan di beranda
+  const latestEdu = (siteProfile?.educations && siteProfile.educations.length > 0)
+    ? siteProfile.educations[0]
+    : null;
+
+  const eduTitle = latestEdu
+    ? (latestEdu.degree ? `${latestEdu.degree} — ${latestEdu.institution}` : latestEdu.institution)
+    : (siteProfile?.education || 'D4 Teknik Informatika — Politeknik Negeri Jember (PSDKU Sidoarjo)');
+
+  const eduFocus = latestEdu?.activities || 'Fokus: Rekayasa Perangkat Lunak, Multimedia & Pengembangan Sistem Informasi';
+
+  const gpaText = latestEdu?.gpa || siteProfile?.gpa?.trim() || '3.79';
   const courseworkList =
     siteProfile?.coursework && siteProfile.coursework.length > 0
       ? siteProfile.coursework
@@ -214,10 +225,10 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
               >
                 <div className="sm:col-span-8 space-y-1">
                   <h4 className="font-sans font-bold text-sm sm:text-base text-ink">
-                    {siteProfile?.education || 'S1 Ilmu Komunikasi — Universitas 17 Agustus 1945 Surabaya'}
+                    {eduTitle}
                   </h4>
                   <p className="font-sans text-xs text-ink-2">
-                    Fokus: Produksi Audio-Visual, Komunikasi Massa &amp; Manajemen Kampanye Digital
+                    {eduFocus}
                   </p>
                 </div>
 
@@ -299,14 +310,21 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Pilar 1: Multimedia — Teks Vermilion Saja Tanpa Logo */}
-            {multimediaSkills.length > 0 && (
-              <div className="space-y-3">
-                <span className="label-mono text-xs font-bold text-vermilion block border-b border-rule pb-1.5">
-                  MULTIMEDIA
+            {((siteProfile?.skillCategories && siteProfile.skillCategories.length > 0)
+              ? siteProfile.skillCategories
+              : [
+                  { id: 'cat-1', name: 'MULTIMEDIA', skills: multimediaSkills },
+                  { id: 'cat-2', name: 'DIGITAL MARKETING', skills: marketingSkills },
+                  { id: 'cat-3', name: 'UI/UX DESAIN', skills: uiuxSkills },
+                  { id: 'cat-4', name: 'TOOL AI', skills: aiSkills },
+                ]
+            ).filter(c => c.skills && c.skills.length > 0).map((cat) => (
+              <div key={cat.id} className="space-y-3">
+                <span className="label-mono text-xs font-bold text-vermilion block border-b border-rule pb-1.5 uppercase">
+                  {cat.name}
                 </span>
                 <ul className="space-y-2">
-                  {multimediaSkills.map((skill) => (
+                  {cat.skills.map((skill) => (
                     <li key={skill} className="flex items-center gap-2 label-mono text-xs text-ink">
                       <SkillIcon name={skill} />
                       <span>{skill}</span>
@@ -314,58 +332,7 @@ export const AboutBento: React.FC<AboutBentoProps> = ({
                   ))}
                 </ul>
               </div>
-            )}
-
-            {/* Pilar 2: Digital Marketing — Teks Vermilion Saja Tanpa Logo */}
-            {marketingSkills.length > 0 && (
-              <div className="space-y-3">
-                <span className="label-mono text-xs font-bold text-vermilion block border-b border-rule pb-1.5">
-                  DIGITAL MARKETING
-                </span>
-                <ul className="space-y-2">
-                  {marketingSkills.map((skill) => (
-                    <li key={skill} className="flex items-center gap-2 label-mono text-xs text-ink">
-                      <SkillIcon name={skill} />
-                      <span>{skill}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Pilar 3: UI/UX Desain — Teks Vermilion Saja Tanpa Logo */}
-            {uiuxSkills.length > 0 && (
-              <div className="space-y-3">
-                <span className="label-mono text-xs font-bold text-vermilion block border-b border-rule pb-1.5">
-                  UI/UX DESAIN
-                </span>
-                <ul className="space-y-2">
-                  {uiuxSkills.map((skill) => (
-                    <li key={skill} className="flex items-center gap-2 label-mono text-xs text-ink">
-                      <SkillIcon name={skill} />
-                      <span>{skill}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Pilar 4: Tool AI — Teks Vermilion Saja Tanpa Logo */}
-            {aiSkills.length > 0 && (
-              <div className="space-y-3">
-                <span className="label-mono text-xs font-bold text-vermilion block border-b border-rule pb-1.5">
-                  TOOL AI
-                </span>
-                <ul className="space-y-2">
-                  {aiSkills.map((skill) => (
-                    <li key={skill} className="flex items-center gap-2 label-mono text-xs text-ink">
-                      <SkillIcon name={skill} />
-                      <span>{skill}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            ))}
           </div>
         </div>
       </div>

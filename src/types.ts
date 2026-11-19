@@ -121,6 +121,22 @@ export interface Certificate {
   period?: string;
 }
 
+export interface EducationItem {
+  id: string;
+  institution: string;
+  degree: string;
+  period: string;
+  location: string;
+  gpa?: string;
+  activities?: string;
+}
+
+export interface SkillCategory {
+  id: string;
+  name: string;
+  skills: string[];
+}
+
 export interface SiteProfile {
   avatarUrl: string | null;
   name: string;
@@ -132,6 +148,10 @@ export interface SiteProfile {
   phone: string;
   location: string;
   education: string;
+  /** Periode studi pendidikan (misal: "2021 – 2025" atau "Agu 2021 – Nov 2025") yang tampil di CV ATS di bawah lokasi */
+  educationPeriod?: string;
+  /** Daftar riwayat pendidikan lengkap (semua tampil di CV ATS, hanya item pertama/terakhir yang tampil di beranda) */
+  educations?: EducationItem[];
   /** Nilai IPK / GPA, contoh "3.78" */
   gpa?: string;
   /** Mata kuliah / fokus studi relevan yang tampil sebagai tag di Tentang Saya */
@@ -153,6 +173,8 @@ export interface SiteProfile {
     marketing: string[];
     aiTools?: string[];
   };
+  /** Daftar kategori keahlian dinamis (bisa ditambah, diubah namanya, atau dihapus dari admin) */
+  skillCategories?: SkillCategory[];
   certificates: Certificate[];
 }
 

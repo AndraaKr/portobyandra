@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Download, FileText, CheckCircle2, ShieldCheck, Globe2 } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
 import { downloadAtsCvPdf, parseEducationText } from '../utils/generateAtsPdf';
+import { EducationItem } from '../types';
 
 interface AtsCvModalProps {
   isOpen: boolean;
@@ -40,48 +41,68 @@ export const AtsCvModal: React.FC<AtsCvModalProps> = ({ isOpen, onClose }) => {
   const p = siteProfile;
 
   const skillGroupsForPreview = p
-    ? [
-        { label: 'UI/UX & Product Design', items: p.skills.uiux },
-        { label: 'Video Editing & Multimedia', items: p.skills.multimedia },
-        { label: 'Digital Marketing & Content', items: p.skills.marketing },
-        {
-          label: 'Tool AI & Generatif',
-          items: p.skills.aiTools?.length ? p.skills.aiTools : p.skills.frontend,
-        },
-      ].filter((g) => g.items.length > 0)
+    ? (p.skillCategories && p.skillCategories.length > 0
+        ? p.skillCategories
+            .filter((c) => c.skills && c.skills.length > 0)
+            .map((c) => ({ label: c.name, items: c.skills }))
+        : [
+            { label: 'UI/UX & Product Design', items: p.skills.uiux },
+            { label: 'Video Editing & Multimedia', items: p.skills.multimedia },
+            { label: 'Digital Marketing & Content', items: p.skills.marketing },
+            {
+              label: 'Tool AI & Generatif',
+              items: p.skills.aiTools?.length ? p.skills.aiTools : p.skills.frontend,
+            },
+          ].filter((g) => g.items.length > 0))
     : [];
 
-  const parsedEdu = p?.education ? parseEducationText(p.education, p.location) : null;
-  const profileGpa = (p?.gpa || '').trim();
-  const educationGpa =
-    parsedEdu?.gpa ||
-    (profileGpa
-      ? /^(ipk|gpa)\b/i.test(profileGpa)
-        ? profileGpa
-        : `IPK: ${profileGpa}`
-      : 'IPK: 3.78');
-
-  const contactSegments = p
+  interface ModalContactSegment {
+    text: string;
+    isLink: boolean;
+    url?: string;
+  }
+  const contactSegments: ModalContactSegment[] = p
     ? [
-        p.email ? { text: p.email.trim(), isLink: true } : null,
+        p.email ? { text: p.email.trim(), isLink: true, url: `mailto:${p.email.trim()}` } : null,
         p.phone ? { text: p.phone.trim(), isLink: false } : null,
-        p.socials.linkedin
+        p.socials?.linkedin
           ? {
               text: p.socials.linkedin.trim().replace(/^https?:\/\/(www\.)?/, '').replace(/\/+$/, ''),
               isLink: true,
+              url: p.socials.linkedin.startsWith('http') ? p.socials.linkedin.trim() : `https://${p.socials.linkedin.trim()}`,
             }
           : null,
-        p.socials.website || p.socials.github
+        p.socials?.website || p.socials?.github
           ? {
               text: (p.socials.website || p.socials.github)
                 .trim()
                 .replace(/^https?:\/\/(www\.)?/, '')
                 .replace(/\/+$/, ''),
               isLink: true,
+              url: (p.socials.website || p.socials.github).startsWith('http')
+                ? (p.socials.website || p.socials.github).trim()
+                : `https://${(p.socials.website || p.socials.github).trim()}`,
             }
           : null,
-      ].filter((x): x is { text: string; isLink: boolean } => Boolean(x))
+      ].filter((x): x is ModalContactSegment => Boolean(x))
     : [];
+
+  const eduList: EducationItem[] =
+    p?.educations && p.educations.length > 0
+      ? p.educations
+      : p?.education
+        ? [
+            {
+              id: 'edu-modal-init',
+              institution: parseEducationText(p.education, p.location || 'Surabaya, Indonesia', p.educationPeriod).institution || p.education,
+              degree: parseEducationText(p.education, p.location || 'Surabaya, Indonesia', p.educationPeriod).degree || '',
+              period: p.educationPeriod || parseEducationText(p.education, p.location || 'Surabaya, Indonesia', p.educationPeriod).period || '2021 – 2025',
+              location: p.location || 'Surabaya, Indonesia',
+              gpa: p.gpa || '3.79',
+              activities: '',
+            },
+          ]
+        : [];
   const sortedExperiences = [...experiences].sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
@@ -227,9 +248,20 @@ export const AtsCvModal: React.FC<AtsCvModalProps> = ({ isOpen, onClose }) => {
                     {contactSegments.map((seg, i) => (
                       <React.Fragment key={i}>
                         {i > 0 && <span className="text-ink-2">|</span>}
-                        <span className="text-ink font-medium">
-                          {seg.text}
-                        </span>
+                        {seg.isLink && seg.url ? (
+                          <a
+                            href={seg.url}
+                            target={seg.url.startsWith('mailto:') ? undefined : '_blank'}
+                            rel="noopener noreferrer"
+                            className="text-ink underline hover:opacity-80 transition-opacity"
+                          >
+                            {seg.text}
+                          </a>
+                        ) : (
+                          <span className="text-ink font-medium">
+                            {seg.text}
+                          </span>
+                        )}
                       </React.Fragment>
                     ))}
                   </div>
@@ -249,48 +281,49 @@ export const AtsCvModal: React.FC<AtsCvModalProps> = ({ isOpen, onClose }) => {
                 </p>
               )}
 
-              {/* Pendidikan */}
-              {p.education && parsedEdu && (
-                <div className="space-y-1.5 pt-1">
+              {/* Pendidikan (Daftar semua pendidikan dari Admin) */}
+              {eduList.length > 0 && (
+                <div className="space-y-2 pt-1">
                   <div className="font-bold uppercase tracking-wide text-[13px] border-b border-rule pb-0.5 text-ink">
                     {isId ? 'PENDIDIKAN' : 'EDUCATION'}
                   </div>
 
-                  <div>
-                    <div className="flex justify-between items-baseline gap-2">
-                      <span className="font-bold text-[13px] text-ink">
-                        {parsedEdu.institution || p.education}
-                      </span>
-                      {parsedEdu.location && (
-                        <span className="font-bold text-[12.5px] text-ink text-right">
-                          {parsedEdu.location}
-                        </span>
-                      )}
-                    </div>
+                  <div className="space-y-2.5">
+                    {eduList.map((eduItem) => {
+                      const gpaLabel = eduItem.gpa
+                        ? (/^(ipk|gpa)\b/i.test(eduItem.gpa) ? eduItem.gpa : `IPK: ${eduItem.gpa}`)
+                        : '';
+                      const bullets = eduItem.activities
+                        ? eduItem.activities.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+                        : [];
 
-                    {(parsedEdu.degree || educationGpa || parsedEdu.period) && (
-                      <div className="flex justify-between items-baseline gap-2">
-                        <span className="text-[12.5px] text-ink-2">
-                          {parsedEdu.degree && <em>{parsedEdu.degree}</em>}
-                          {educationGpa && (
-                            <span>{parsedEdu.degree ? ` | ${educationGpa}` : educationGpa}</span>
-                          )}
-                        </span>
-                        {parsedEdu.period && (
-                          <span className="font-bold text-[12.5px] text-ink text-right">
-                            {parsedEdu.period}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                      return (
+                        <div key={eduItem.id} className="space-y-0.5">
+                          {/* Baris 1: Institusi (Kiri, Bold) & Lokasi (Kanan, Bold) */}
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="font-bold text-[13px] text-ink">
+                              {eduItem.institution}
+                            </span>
+                            <span className="font-bold text-[12.5px] text-ink text-right shrink-0">
+                              {eduItem.location || p?.location || 'Surabaya, Indonesia'}
+                            </span>
+                          </div>
 
-                    {parsedEdu.bullets.length > 0 && (
-                      <ul className="list-disc list-outside pl-5 mt-1 text-[12.5px] text-ink space-y-0.5">
-                        {parsedEdu.bullets.map((b, i) => (
-                          <li key={i}>{b}</li>
-                        ))}
-                      </ul>
-                    )}
+                          {/* Baris 2: Gelar & IPK (Kiri) | Tahun / Periode (Kanan, Bold, tepat di bawah Lokasi) */}
+                          <div className="flex justify-between items-baseline gap-2">
+                            <span className="text-[12.5px] text-ink-2">
+                              {eduItem.degree && <em>{eduItem.degree}</em>}
+                              {gpaLabel && (
+                                <span>{eduItem.degree ? ` | ${gpaLabel}` : gpaLabel}</span>
+                              )}
+                            </span>
+                            <span className="font-bold text-[12.5px] text-ink text-right shrink-0">
+                              {eduItem.period || '2021 – 2025'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -409,8 +442,22 @@ export const AtsCvModal: React.FC<AtsCvModalProps> = ({ isOpen, onClose }) => {
                       <li key={cert.id} className="space-y-0.5">
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-ink">
-                            <strong>{cert.issuer ? `${cert.issuer} - ` : ''}</strong>
-                            {cert.name}
+                            {cert.url && cert.url.trim() ? (
+                              <a
+                                href={cert.url.trim().startsWith('http') ? cert.url.trim() : `https://${cert.url.trim()}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-ink underline hover:opacity-80 transition-opacity"
+                              >
+                                <strong>{cert.issuer ? `${cert.issuer} - ` : ''}</strong>
+                                <span>{cert.name}</span>
+                              </a>
+                            ) : (
+                              <>
+                                <strong>{cert.issuer ? `${cert.issuer} - ` : ''}</strong>
+                                <span>{cert.name}</span>
+                              </>
+                            )}
                           </span>
                           {(cert.period || cert.year) && (
                             <span className="font-bold text-ink shrink-0">{cert.period || cert.year}</span>

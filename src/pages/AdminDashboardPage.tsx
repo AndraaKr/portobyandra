@@ -23,10 +23,13 @@ import {
   Camera,
   Eye,
   EyeOff,
-  TrendingUp
+  TrendingUp,
+  GraduationCap,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 import { usePortfolio } from '../context/PortfolioContext';
-import { Experience, PortfolioItem, ContactMessage, Certificate, MarketingResult } from '../types';
+import { Experience, PortfolioItem, ContactMessage, Certificate, MarketingResult, EducationItem, SkillCategory } from '../types';
 import { ExperienceModal } from '../components/ExperienceModal';
 import { PortfolioModal } from '../components/PortfolioModal';
 import { PortfolioInlineEditor } from '../components/PortfolioInlineEditor';
@@ -109,12 +112,14 @@ export const AdminDashboardPage: React.FC = () => {
   // Profil Form
   const [profileForm, setProfileForm] = useState({
     name: '', shortName: '', title: '', tagline: '', bio: '',
-    email: '', phone: '', location: '', education: '', gpa: '', coursework: '', currentRole: '',
+    email: '', phone: '', location: '', education: '', educationPeriod: '', gpa: '', coursework: '', currentRole: '',
     availabilityStatus: 'OPEN TO WORK',
     github: '', linkedin: '', instagram: '', youtube: '', website: '',
     skillsUiux: '', skillsAiTools: '', skillsMultimedia: '', skillsMarketing: '',
   });
   const [certForm, setCertForm] = useState<Certificate[]>([]);
+  const [educationForm, setEducationForm] = useState<EducationItem[]>([]);
+  const [skillCategoryForm, setSkillCategoryForm] = useState<{ id: string; name: string; rawSkills: string }[]>([]);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileStatus, setProfileStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
@@ -134,6 +139,7 @@ export const AdminDashboardPage: React.FC = () => {
       phone: siteProfile.phone,
       location: siteProfile.location,
       education: siteProfile.education,
+      educationPeriod: siteProfile.educationPeriod || '',
       gpa: siteProfile.gpa ?? '',
       coursework: (siteProfile.coursework ?? []).join(', '),
       currentRole: siteProfile.currentRole,
@@ -149,12 +155,115 @@ export const AdminDashboardPage: React.FC = () => {
       skillsMarketing: siteProfile.skills.marketing.join(', '),
     });
     setCertForm(siteProfile.certificates);
+    setEducationForm(
+      siteProfile.educations && siteProfile.educations.length > 0
+        ? siteProfile.educations
+        : [
+            {
+              id: `edu-default-1`,
+              institution: siteProfile.education && siteProfile.education.includes('—')
+                ? siteProfile.education.split('—')[1]?.trim()
+                : (siteProfile.education || 'Politeknik Negeri Jember (PSDKU Sidoarjo)'),
+              degree: siteProfile.education && siteProfile.education.includes('—')
+                ? siteProfile.education.split('—')[0]?.trim()
+                : 'D4 Teknik Informatika',
+              period: siteProfile.educationPeriod || '2021 – 2025',
+              location: siteProfile.location || 'Sidoarjo, Jawa Timur',
+              gpa: siteProfile.gpa || '3.79',
+              activities: 'Fokus: Rekayasa Perangkat Lunak, Multimedia & Pengembangan Sistem Informasi',
+            },
+          ]
+    );
+
+    // Kategori keahlian dinamis
+    const initialSkillCats =
+      siteProfile.skillCategories && siteProfile.skillCategories.length > 0
+        ? siteProfile.skillCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            rawSkills: c.skills.join(', '),
+          }))
+        : [
+            {
+              id: 'cat-multimedia',
+              name: 'Video Editing & Multimedia',
+              rawSkills: siteProfile.skills.multimedia.join(', ') || 'Premiere Pro, After Effects, CapCut Pro, DaVinci Resolve, Motion Design',
+            },
+            {
+              id: 'cat-marketing',
+              name: 'Digital Marketing & Konten AI',
+              rawSkills: siteProfile.skills.marketing.join(', ') || 'TikTok & Reels Growth, Meta Ads, SEO Konten, Copywriting',
+            },
+            {
+              id: 'cat-uiux',
+              name: 'UI/UX & Product Design',
+              rawSkills: siteProfile.skills.uiux.join(', ') || 'Figma, Wireframing, Prototyping, Design System',
+            },
+            {
+              id: 'cat-ai',
+              name: 'Tool AI & Generatif',
+              rawSkills: aiSkillsList.join(', ') || 'ChatGPT & Claude, Midjourney, ElevenLabs, Runway Gen-2',
+            },
+          ];
+    setSkillCategoryForm(initialSkillCats);
   }, [siteProfile]);
 
   const setPF = (key: keyof typeof profileForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setProfileForm(prev => ({ ...prev, [key]: e.target.value }));
 
   const splitTags = (v: string) => v.split(',').map(t => t.trim()).filter(Boolean);
+
+  const addSkillCategoryRow = () =>
+    setSkillCategoryForm(prev => [
+      ...prev,
+      {
+        id: `cat-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: '',
+        rawSkills: '',
+      },
+    ]);
+  const updateSkillCategoryRow = (id: string, field: 'name' | 'rawSkills', value: string) =>
+    setSkillCategoryForm(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
+  const removeSkillCategoryRow = (id: string) =>
+    setSkillCategoryForm(prev => prev.filter(c => c.id !== id));
+  const moveSkillCategoryRow = (index: number, direction: 'up' | 'down') => {
+    setSkillCategoryForm(prev => {
+      const next = [...prev];
+      const targetIdx = direction === 'up' ? index - 1 : index + 1;
+      if (targetIdx < 0 || targetIdx >= next.length) return prev;
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+  };
+
+  const addEducationRow = () =>
+    setEducationForm(prev => [
+      ...prev,
+      {
+        id: `edu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        institution: '',
+        degree: '',
+        period: '2021 – 2025',
+        location: profileForm.location || 'Surabaya, Indonesia',
+        gpa: '',
+        activities: '',
+      },
+    ]);
+  const updateEducationRow = (id: string, field: keyof EducationItem, value: string) =>
+    setEducationForm(prev => prev.map(e => (e.id === id ? { ...e, [field]: value } : e)));
+  const removeEducationRow = (id: string) =>
+    setEducationForm(prev => prev.filter(e => e.id !== id));
+  const moveEducationRow = (index: number, direction: 'up' | 'down') => {
+    setEducationForm(prev => {
+      const next = [...prev];
+      const targetIdx = direction === 'up' ? index - 1 : index + 1;
+      if (targetIdx < 0 || targetIdx >= next.length) return prev;
+      const [moved] = next.splice(index, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+  };
 
   const addCertRow = (type: 'sertifikat' | 'pelatihan' = 'sertifikat') =>
     setCertForm(prev => [
@@ -177,6 +286,30 @@ export const AdminDashboardPage: React.FC = () => {
     e.preventDefault();
     setProfileStatus(null);
     setIsSavingProfile(true);
+    const validEducations = educationForm.filter(e => e.institution.trim());
+    const topEdu = validEducations[0];
+
+    const mappedSkillCategories: SkillCategory[] = skillCategoryForm
+      .filter(c => c.name.trim())
+      .map(c => ({
+        id: c.id,
+        name: c.name.trim(),
+        skills: splitTags(c.rawSkills),
+      }));
+
+    let legacyMultimedia: string[] = [];
+    let legacyMarketing: string[] = [];
+    let legacyUiux: string[] = [];
+    let legacyAi: string[] = [];
+
+    mappedSkillCategories.forEach(cat => {
+      const lower = cat.name.toLowerCase();
+      if (lower.includes('multimedia') || lower.includes('video')) legacyMultimedia = cat.skills;
+      else if (lower.includes('marketing')) legacyMarketing = cat.skills;
+      else if (lower.includes('ui/ux') || lower.includes('design')) legacyUiux = cat.skills;
+      else if (lower.includes('ai') || lower.includes('generatif')) legacyAi = cat.skills;
+    });
+
     const result = await updateSiteProfile({
       name: profileForm.name.trim(),
       shortName: profileForm.shortName.trim(),
@@ -186,8 +319,10 @@ export const AdminDashboardPage: React.FC = () => {
       email: profileForm.email.trim(),
       phone: profileForm.phone.trim(),
       location: profileForm.location.trim(),
-      education: profileForm.education.trim(),
-      gpa: profileForm.gpa.trim(),
+      education: topEdu ? (topEdu.degree ? `${topEdu.degree} — ${topEdu.institution}` : topEdu.institution) : profileForm.education.trim(),
+      educationPeriod: topEdu?.period || profileForm.educationPeriod.trim(),
+      educations: validEducations,
+      gpa: topEdu?.gpa || profileForm.gpa.trim(),
       coursework: splitTags(profileForm.coursework),
       currentRole: profileForm.currentRole.trim(),
       availabilityStatus: profileForm.availabilityStatus.trim(),
@@ -199,12 +334,13 @@ export const AdminDashboardPage: React.FC = () => {
         website: profileForm.website.trim(),
       },
       skills: {
-        uiux: splitTags(profileForm.skillsUiux),
+        uiux: legacyUiux.length > 0 ? legacyUiux : splitTags(profileForm.skillsUiux),
         frontend: [],
-        aiTools: splitTags(profileForm.skillsAiTools),
-        multimedia: splitTags(profileForm.skillsMultimedia),
-        marketing: splitTags(profileForm.skillsMarketing),
+        aiTools: legacyAi.length > 0 ? legacyAi : splitTags(profileForm.skillsAiTools),
+        multimedia: legacyMultimedia.length > 0 ? legacyMultimedia : splitTags(profileForm.skillsMultimedia),
+        marketing: legacyMarketing.length > 0 ? legacyMarketing : splitTags(profileForm.skillsMarketing),
       },
+      skillCategories: mappedSkillCategories,
       certificates: certForm.filter(c => c.name.trim()),
     });
     setIsSavingProfile(false);
@@ -1213,18 +1349,146 @@ export const AdminDashboardPage: React.FC = () => {
                 <input value={profileForm.currentRole} onChange={setPF('currentRole')} placeholder="DIGITAL MARKETING INTERN" className="input-swiss" />
               </div>
               <div className="sm:col-span-2">
-                <label className="block label-mono text-ink mb-1">Pendidikan</label>
-                <input value={profileForm.education} onChange={setPF('education')} className="input-swiss" />
-              </div>
-              <div>
-                <label className="block label-mono text-ink mb-1">IPK / GPA (tampil di Tentang Saya)</label>
-                <input value={profileForm.gpa} onChange={setPF('gpa')} placeholder="3.78" className="input-swiss" />
-              </div>
-              <div>
                 <label className="block label-mono text-ink mb-1">Mata Kuliah Relevan (pisahkan dengan koma)</label>
                 <input value={profileForm.coursework} onChange={setPF('coursework')} placeholder="Riset Audiens, Strategi Kampanye Digital" className="input-swiss" />
               </div>
             </div>
+          </div>
+
+          {/* KARTU: RIWAYAT PENDIDIKAN DEDIKASI */}
+          <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-rule pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-ink shrink-0" />
+                  <h3 className="font-bold text-sm text-ink">Riwayat Pendidikan</h3>
+                </div>
+                <p className="label-mono text-xs text-ink-2 mt-1">
+                  Semua riwayat pendidikan formal akan muncul di dokumen CV ATS. Di beranda (homepage), hanya 1 pendidikan terakhir (#1 teratas) yang ditampilkan.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addEducationRow}
+                className="btn-swiss text-xs flex items-center gap-1.5 py-1.5 px-3 self-start sm:self-auto shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah Pendidikan</span>
+              </button>
+            </div>
+
+            {educationForm.length === 0 ? (
+              <div className="p-6 text-center border border-dashed border-rule text-xs text-ink-2">
+                Belum ada data pendidikan. Klik "+ Tambah Pendidikan" untuk menambahkan riwayat studi Anda.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {educationForm.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className="p-4 border border-rule space-y-3"
+                    style={{ backgroundColor: 'var(--paper-2)' }}
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-rule pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`label-mono text-xs px-2 py-0.5 border ${
+                          idx === 0
+                            ? 'bg-paper text-ink border-rule font-bold'
+                            : 'bg-paper text-ink-2 border-rule'
+                        }`}>
+                          {idx === 0 ? '#1 (Pendidikan Terakhir — Tampil di Beranda)' : `#${idx + 1}`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => moveEducationRow(idx, 'up')}
+                          title="Geser ke atas"
+                          className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === educationForm.length - 1}
+                          onClick={() => moveEducationRow(idx, 'down')}
+                          title="Geser ke bawah"
+                          className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeEducationRow(item.id)}
+                          title="Hapus baris pendidikan"
+                          className="p-1 border border-rule text-ink hover:bg-paper ml-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <label className="block label-mono text-ink mb-1">Nama Institusi / Universitas / Sekolah</label>
+                        <input
+                          value={item.institution}
+                          onChange={e => updateEducationRow(item.id, 'institution', e.target.value)}
+                          placeholder="Politeknik Negeri Jember (PSDKU Sidoarjo)"
+                          className="input-swiss text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block label-mono text-ink mb-1">Jenjang &amp; Jurusan / Program Studi</label>
+                        <input
+                          value={item.degree}
+                          onChange={e => updateEducationRow(item.id, 'degree', e.target.value)}
+                          placeholder="D4 Teknik Informatika"
+                          className="input-swiss text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block label-mono text-ink mb-1">Tahun / Periode Studi (CV ATS)</label>
+                        <input
+                          value={item.period}
+                          onChange={e => updateEducationRow(item.id, 'period', e.target.value)}
+                          placeholder="2021 – 2025"
+                          className="input-swiss text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block label-mono text-ink mb-1">Lokasi Kampus / Kota</label>
+                        <input
+                          value={item.location}
+                          onChange={e => updateEducationRow(item.id, 'location', e.target.value)}
+                          placeholder="Sidoarjo, Jawa Timur"
+                          className="input-swiss text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block label-mono text-ink mb-1">Nilai IPK / GPA Kumulatif</label>
+                        <input
+                          value={item.gpa || ''}
+                          onChange={e => updateEducationRow(item.id, 'gpa', e.target.value)}
+                          placeholder="3.79"
+                          className="input-swiss text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block label-mono text-ink mb-1">Fokus Studi / Aktivitas / Catatan</label>
+                        <input
+                          value={item.activities || ''}
+                          onChange={e => updateEducationRow(item.id, 'activities', e.target.value)}
+                          placeholder="Fokus: Rekayasa Perangkat Lunak, Multimedia &amp; Pengembangan Sistem"
+                          className="input-swiss text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
@@ -1267,34 +1531,92 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
           </div>
 
+          {/* KARTU: KATEGORI KEAHLIAN & PERANGKAT KERJA (DENGAN CRUD LENGKAP) */}
           <div className="p-6 border border-rule space-y-4" style={{ backgroundColor: 'var(--paper)' }}>
-            <h3 className="font-bold text-sm text-ink border-b border-rule pb-2">
-              Keahlian (Pisahkan Koma)
-            </h3>
-            <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-rule pb-3">
               <div>
-                <label className="block label-mono text-ink mb-1">Video Editing &amp; Multimedia</label>
-                <textarea value={profileForm.skillsMultimedia} onChange={setPF('skillsMultimedia')} rows={2} className="input-swiss resize-y" />
+                <h3 className="font-bold text-sm text-ink">Kategori Keahlian &amp; Perangkat Kerja</h3>
               </div>
-              <div>
-                <label className="block label-mono text-ink mb-1">Digital Marketing &amp; Konten AI</label>
-                <textarea value={profileForm.skillsMarketing} onChange={setPF('skillsMarketing')} rows={2} className="input-swiss resize-y" />
-              </div>
-              <div>
-                <label className="block label-mono text-ink mb-1">UI/UX &amp; Product Design</label>
-                <textarea value={profileForm.skillsUiux} onChange={setPF('skillsUiux')} rows={2} className="input-swiss resize-y" />
-              </div>
-              <div>
-                <label className="block label-mono text-ink mb-1">Tool AI &amp; Generatif</label>
-                <textarea
-                  value={profileForm.skillsAiTools}
-                  onChange={setPF('skillsAiTools')}
-                  rows={2}
-                  className="input-swiss resize-y"
-                  placeholder="ChatGPT, Midjourney, ElevenLabs, Runway Gen-2"
-                />
-              </div>
+              <button
+                type="button"
+                onClick={addSkillCategoryRow}
+                className="btn-swiss text-xs flex items-center gap-1.5 py-1.5 px-3 self-start sm:self-auto shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah Kategori</span>
+              </button>
             </div>
+
+            {skillCategoryForm.length === 0 ? (
+              <div className="p-6 text-center border border-dashed border-rule text-xs text-ink-2">
+                Belum ada kategori keahlian. Klik &quot;+ Tambah Kategori&quot; untuk menambahkan kategori keahlian Anda.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {skillCategoryForm.map((cat, idx) => (
+                  <div
+                    key={cat.id}
+                    className="p-4 border border-rule space-y-3"
+                    style={{ backgroundColor: 'var(--paper-2)' }}
+                  >
+                    <div className="flex items-center justify-between gap-2 border-b border-rule pb-2">
+                      <div className="flex items-center gap-2 flex-1 max-w-md">
+                        <span className="label-mono text-xs px-2 py-0.5 border bg-paper text-ink border-rule">
+                          #{idx + 1}
+                        </span>
+                        <input
+                          value={cat.name}
+                          onChange={(e) => updateSkillCategoryRow(cat.id, 'name', e.target.value)}
+                          placeholder="Nama Kategori (mis. Video Editing &amp; Multimedia)"
+                          className="input-swiss text-xs font-bold"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => moveSkillCategoryRow(idx, 'up')}
+                          title="Geser ke atas"
+                          className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === skillCategoryForm.length - 1}
+                          onClick={() => moveSkillCategoryRow(idx, 'down')}
+                          title="Geser ke bawah"
+                          className="p-1 border border-rule text-ink disabled:opacity-30 disabled:cursor-not-allowed hover:bg-paper"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeSkillCategoryRow(cat.id)}
+                          title="Hapus kategori keahlian"
+                          className="p-1 border border-rule text-ink hover:bg-paper ml-1"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block label-mono text-ink mb-1">
+                        Daftar Keahlian / Tool (pisahkan dengan koma)
+                      </label>
+                      <textarea
+                        value={cat.rawSkills}
+                        onChange={(e) => updateSkillCategoryRow(cat.id, 'rawSkills', e.target.value)}
+                        rows={2}
+                        placeholder="Premiere Pro, After Effects, DaVinci Resolve, CapCut Pro"
+                        className="input-swiss text-xs resize-y"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* KARTU 1: SERTIFIKASI PROFESIONAL RESMI */}

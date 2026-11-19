@@ -7,6 +7,8 @@ import {
   ContactMessage,
   ActiveTab,
   AdminUser,
+  EducationItem,
+  SkillCategory,
   SiteProfile,
 } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -240,53 +242,145 @@ const DEFAULT_SITE_PROFILE: SiteProfile = {
   email: '',
   phone: '',
   location: '',
-  education: '',
-  gpa: '',
+  education: 'D4 Teknik Informatika — Politeknik Negeri Jember (PSDKU Sidoarjo)',
+  educationPeriod: '2021 – 2025',
+  educations: [
+    {
+      id: 'edu-1',
+      institution: 'Politeknik Negeri Jember (PSDKU Sidoarjo)',
+      degree: 'D4 Teknik Informatika',
+      period: '2021 – 2025',
+      location: 'Sidoarjo, Jawa Timur',
+      gpa: '3.79',
+      activities: 'Fokus: Rekayasa Perangkat Lunak, Multimedia & Pengembangan Sistem Informasi',
+    },
+  ],
+  gpa: '3.79',
   coursework: [],
   availabilityStatus: 'OPEN TO WORK',
   currentRole: '',
   socials: { github: '', linkedin: '', instagram: '', youtube: '', website: '' },
   skills: { uiux: [], frontend: [], multimedia: [], marketing: [] },
+  skillCategories: [
+    {
+      id: 'cat-multimedia',
+      name: 'Video Editing & Multimedia',
+      skills: ['Adobe Premiere Pro', 'After Effects', 'CapCut Pro', 'DaVinci Resolve', 'Storyboarding', 'Color Grading'],
+    },
+    {
+      id: 'cat-marketing',
+      name: 'Digital Marketing & Konten AI',
+      skills: ['TikTok & Reels Growth', 'Meta Ads', 'SEO Content Strategy', 'Copywriting', 'Content Calendar'],
+    },
+    {
+      id: 'cat-uiux',
+      name: 'UI/UX & Product Design',
+      skills: ['Figma', 'Wireframing', 'Prototyping', 'Design System', 'User Flow'],
+    },
+    {
+      id: 'cat-ai',
+      name: 'Tool AI & Generatif',
+      skills: ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
+    },
+  ],
   certificates: [],
 };
 
-const mapSiteProfileFromDb = (row: any): SiteProfile => ({
-  avatarUrl: row.avatar_url ?? null,
-  name: row.name ?? '',
-  shortName: row.short_name ?? '',
-  title: row.title ?? '',
-  tagline: row.tagline ?? '',
-  bio: row.bio ?? '',
-  email: row.email ?? '',
-  phone: row.phone ?? '',
-  location: row.location ?? '',
-  education: row.education ?? '',
-  // GPA & mata kuliah relevan disimpan di dalam kolom JSON skills agar tidak perlu migrasi kolom baru
-  gpa: row.gpa ?? row.skills?.gpa ?? '',
-  coursework: Array.isArray(row.coursework)
-    ? row.coursework
-    : Array.isArray(row.skills?.coursework)
-      ? row.skills.coursework
-      : [],
-  // GPA, coursework, dan currentRole cadangan jika kolom tabel belum ada
-  availabilityStatus: row.availability_status ?? row.skills?.availabilityStatus ?? 'OPEN TO WORK',
-  currentRole: row.current_role_label ?? row.skills?.currentRole ?? row.skills?.current_role ?? '',
-  socials: {
-    github: row.github_url ?? '',
-    linkedin: row.linkedin_url ?? '',
-    instagram: row.instagram_url ?? '',
-    youtube: row.youtube_url ?? '',
-    website: row.website_url ?? '',
-  },
-  skills: {
-    uiux: row.skills?.uiux ?? [],
-    frontend: row.skills?.frontend ?? [],
-    multimedia: row.skills?.multimedia ?? [],
-    marketing: row.skills?.marketing ?? [],
-    aiTools: row.skills?.aiTools ?? row.skills?.ai_tools ?? ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
-  },
-  certificates: Array.isArray(row.certificates) ? row.certificates : [],
-});
+const mapSiteProfileFromDb = (row: any): SiteProfile => {
+  const rawEducations = Array.isArray(row.skills?.educations)
+    ? row.skills.educations
+    : Array.isArray(row.educations)
+      ? row.educations
+      : [];
+
+  const educations: EducationItem[] = rawEducations.length > 0
+    ? rawEducations
+    : [
+        {
+          id: 'edu-init-1',
+          institution: row.education && row.education.includes('—')
+            ? row.education.split('—')[1]?.trim()
+            : (row.education || 'Politeknik Negeri Jember (PSDKU Sidoarjo)'),
+          degree: row.education && row.education.includes('—')
+            ? row.education.split('—')[0]?.trim()
+            : 'D4 Teknik Informatika',
+          period: row.education_period ?? row.skills?.educationPeriod ?? '2021 – 2025',
+          location: row.location || 'Sidoarjo, Jawa Timur',
+          gpa: row.gpa ?? row.skills?.gpa ?? '3.79',
+          activities: 'Fokus: Rekayasa Perangkat Lunak, Multimedia & Pengembangan Sistem Informasi',
+        },
+      ];
+
+  return {
+    avatarUrl: row.avatar_url ?? null,
+    name: row.name ?? '',
+    shortName: row.short_name ?? '',
+    title: row.title ?? '',
+    tagline: row.tagline ?? '',
+    bio: row.bio ?? '',
+    email: row.email ?? '',
+    phone: row.phone ?? '',
+    location: row.location ?? '',
+    education: row.education ?? '',
+    educationPeriod: row.education_period ?? row.skills?.educationPeriod ?? '',
+    educations,
+    // GPA & mata kuliah relevan disimpan di dalam kolom JSON skills agar tidak perlu migrasi kolom baru
+    gpa: row.gpa ?? row.skills?.gpa ?? '',
+    coursework: Array.isArray(row.coursework)
+      ? row.coursework
+      : Array.isArray(row.skills?.coursework)
+        ? row.skills.coursework
+        : [],
+    // GPA, coursework, dan currentRole cadangan jika kolom tabel belum ada
+    availabilityStatus: row.availability_status ?? row.skills?.availabilityStatus ?? 'OPEN TO WORK',
+    currentRole: row.current_role_label ?? row.skills?.currentRole ?? row.skills?.current_role ?? '',
+    socials: {
+      github: row.github_url ?? '',
+      linkedin: row.linkedin_url ?? '',
+      instagram: row.instagram_url ?? '',
+      youtube: row.youtube_url ?? '',
+      website: row.website_url ?? '',
+    },
+    skills: {
+      uiux: row.skills?.uiux ?? [],
+      frontend: row.skills?.frontend ?? [],
+      multimedia: row.skills?.multimedia ?? [],
+      marketing: row.skills?.marketing ?? [],
+      aiTools: row.skills?.aiTools ?? row.skills?.ai_tools ?? ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
+    },
+    skillCategories: (() => {
+      const rawCats = Array.isArray(row.skills?.skillCategories)
+        ? row.skills.skillCategories
+        : Array.isArray(row.skills?.categories)
+          ? row.skills.categories
+          : [];
+      if (rawCats.length > 0) return rawCats;
+      return [
+        {
+          id: 'cat-multimedia',
+          name: 'Video Editing & Multimedia',
+          skills: row.skills?.multimedia ?? ['Adobe Premiere Pro', 'After Effects', 'CapCut Pro', 'DaVinci Resolve', 'Storyboarding', 'Color Grading'],
+        },
+        {
+          id: 'cat-marketing',
+          name: 'Digital Marketing & Konten AI',
+          skills: row.skills?.marketing ?? ['TikTok & Reels Growth', 'Meta Ads', 'SEO Content Strategy', 'Copywriting', 'Content Calendar'],
+        },
+        {
+          id: 'cat-uiux',
+          name: 'UI/UX & Product Design',
+          skills: row.skills?.uiux ?? ['Figma', 'Wireframing', 'Prototyping', 'Design System', 'User Flow'],
+        },
+        {
+          id: 'cat-ai',
+          name: 'Tool AI & Generatif',
+          skills: row.skills?.aiTools ?? row.skills?.ai_tools ?? ['ChatGPT & Claude', 'Midjourney', 'ElevenLabs', 'Runway Gen-2'],
+        },
+      ];
+    })(),
+    certificates: Array.isArray(row.certificates) ? row.certificates : [],
+  };
+};
 
 const mapSiteProfileToDb = (updates: Partial<SiteProfile>) => {
   const row: Record<string, any> = {};
@@ -320,6 +414,36 @@ const mapSiteProfileToDb = (updates: Partial<SiteProfile>) => {
   }
   if (updates.coursework !== undefined) {
     skillsPayload.coursework = updates.coursework;
+  }
+  if (updates.educationPeriod !== undefined) {
+    skillsPayload.educationPeriod = updates.educationPeriod;
+  }
+  if (updates.skillCategories !== undefined) {
+    skillsPayload.skillCategories = updates.skillCategories;
+    // Sinkronkan ke field legacy
+    updates.skillCategories.forEach(cat => {
+      const lower = cat.name.toLowerCase();
+      if (lower.includes('multimedia') || lower.includes('video')) {
+        skillsPayload.multimedia = cat.skills;
+      } else if (lower.includes('marketing')) {
+        skillsPayload.marketing = cat.skills;
+      } else if (lower.includes('ui/ux') || lower.includes('design')) {
+        skillsPayload.uiux = cat.skills;
+      } else if (lower.includes('ai') || lower.includes('generatif')) {
+        skillsPayload.aiTools = cat.skills;
+      }
+    });
+  }
+  if (updates.educations !== undefined) {
+    skillsPayload.educations = updates.educations;
+    if (updates.educations.length > 0) {
+      const topEdu = updates.educations[0];
+      row.education = topEdu.degree ? `${topEdu.degree} — ${topEdu.institution}` : topEdu.institution;
+      skillsPayload.educationPeriod = topEdu.period || '2021 – 2025';
+      if (topEdu.gpa) {
+        skillsPayload.gpa = topEdu.gpa;
+      }
+    }
   }
 
   if (Object.keys(skillsPayload).length > 0) {

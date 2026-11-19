@@ -180,7 +180,7 @@ export const HomePage: React.FC = () => {
               type="button"
               onClick={() => {
                 if (siteProfile) {
-                  downloadAtsCvPdf(siteProfile, experiences, portfolioItems, { language: 'id', includeProjects: true });
+                  downloadAtsCvPdf(siteProfile, experiences, portfolioItems, { language: 'id', includeProjects: false });
                 }
               }}
               className="btn-primary inline-flex items-center gap-2 min-h-[44px]"
